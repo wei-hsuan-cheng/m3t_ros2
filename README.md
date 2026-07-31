@@ -318,3 +318,10 @@ ros2 param get /m3t_synthetic_source gt_initial_pose
 ```
 
 If an edited YAML appears to have no effect, confirm that the launch uses the intended `object_config`. For a built-in object, rebuild and source `install/setup.bash` so the installed package contains the new YAML and assets.
+
+
+## Contact
+
+- **Author**: Wei-Hsuan Cheng [(johnathancheng0125@gmail.com)](mailto:johnathancheng0125@gmail.com)
+- **Homepage**: [wei-hsuan-cheng](https://wei-hsuan-cheng.github.io)
+- **GitHub**: [wei-hsuan-cheng](https://github.com/wei-hsuan-cheng)
