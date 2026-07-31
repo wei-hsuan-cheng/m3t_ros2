@@ -1,0 +1,21 @@
+/**:
+  ros__parameters:
+    object_name: mustard
+    geometry_path: "../../assets/mustard/model.obj"
+    texture_path: "../../assets/mustard/texture_map.png"
+    modalities: "region,depth,texture"
+    geometry_unit_in_meter: 1.0
+    geometry_counterclockwise: true
+    geometry_enable_culling: false
+    geometry2body_pose: [
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    ]
+    body_id: 6
+    region_id: 6
+    # [x, y, z, roll, pitch, yaw], with angles in radians.
+    initial_pose: [0.015339, 0.088048545, 0.55300295, 1.5708, 0.0, 0.0]
+    gt_initial_pose: [0.015339, 0.088048545, 0.55300295, 1.5708, 0.0, 0.0]
+    translation_amplitude: [0.096825068, 0.064550045, 0.064550045]

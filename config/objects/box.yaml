@@ -1,0 +1,31 @@
+/**:
+  ros__parameters:
+    object_name: box
+    geometry_path: "../../assets/box/model.obj"
+    geometry_unit_in_meter: 1.0
+    geometry_counterclockwise: true
+    geometry_enable_culling: false
+    geometry2body_pose: [
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    ]
+    body_id: 100
+    region_id: 100
+    # Non-identity rotational symmetries in body coordinates: 180 degrees
+    # around X, Y, and Z. The tracker uses these to keep TF on the closest
+    # temporal branch and to report symmetry-aware rotation error.
+    rotation_symmetries: [
+       1.0,  0.0,  0.0,
+       0.0, -1.0,  0.0,
+       0.0,  0.0, -1.0,
+      -1.0,  0.0,  0.0,
+       0.0,  1.0,  0.0,
+       0.0,  0.0, -1.0,
+      -1.0,  0.0,  0.0,
+       0.0, -1.0,  0.0,
+       0.0,  0.0,  1.0
+    ]
+    # [x, y, z, roll, pitch, yaw], with angles in radians.
+    initial_pose: [0.0, 0.0284408, 0.284408, 0.0, 0.0, 0.0]

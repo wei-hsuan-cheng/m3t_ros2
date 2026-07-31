@@ -1,0 +1,9 @@
+# Python and test caches (patterns apply recursively below m3t_ros2).
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime-generated tracker models belong outside the source package.
+auto_generated/

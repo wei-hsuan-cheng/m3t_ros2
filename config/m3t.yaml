@@ -1,0 +1,100 @@
+m3t_tracker_node:
+  ros__parameters:
+    modalities: "region,depth,texture" # at most "region,depth,texture"
+    track_rate: 0.0
+    publish_rate: 60.0
+    log_period: 2.0
+    event_driven: true
+    adaptive_iterations: true
+    min_corr_iterations: 2
+    max_corr_iterations: 10
+    n_update_iterations: 5
+    convergence_translation_threshold: 0.0001
+    convergence_rotation_threshold_deg: 0.05
+    convergence_required_rounds: 5
+    # Tracker remains at normal nice=0; publisher is deliberately lower.
+    publisher_thread_nice: 5
+    image_outputs: "overlay,keypoints"
+    sync_tolerance: 0.02
+    depth_scale: 0.001
+    lost_threshold: 0.05
+    lost_rotation_threshold: 45.0
+    use_gt_initial_pose: true
+    world_frame: camera
+    gt_frame: object_gt
+    color_topic: /camera/color/image_raw
+    depth_topic: /camera/depth/image_raw
+    color_info_topic: /camera/color/camera_info
+    depth_info_topic: /camera/depth/camera_info
+
+m3t_synthetic_source:
+  ros__parameters:
+    publish_rate: 60.0
+    gt_publish_rate: 60.0
+    n_frames: 240
+    loop: true
+    depth_noise: 0.01
+    distortion: 0.005
+    depth_scale: 0.001
+
+    motion_mode: six_dof_sine # six_dof_sine | orbit | static
+
+    # Independent x/y/z sinusoids. 
+    # Independent roll/pitch/yaw sinusoids using ZYX composition.
+
+    # Small & rapid motion
+    translation_amplitude_m: [0.01, 0.02, 0.05]
+    translation_frequency_hz: [0.25, 0.50, 0.75]
+    translation_phase_deg: [30.0, 0.0, 30.0]
+    rotation_amplitude_deg: [15.0, 10.0, 30.0]
+    rotation_frequency_hz: [0.25, 0.50, 0.75]
+    rotation_phase_deg: [60.0, 90.0, 0.0]
+
+    # Large & slow motion
+    # translation_amplitude_m: [0.05, 0.05, 0.1]
+    # translation_frequency_hz: [0.1, 0.2, 0.25]
+    # translation_phase_deg: [0.0, 30.0, 0.0]
+    # rotation_amplitude_deg: [30.0, 30.0, 60.0]
+    # rotation_frequency_hz: [0.1, 0.1, 0.1]
+    # rotation_phase_deg: [60.0, 0.0, 90.0]
+
+    # Translation can be expressed in the initial world or body axes.
+    # Rotation increments can be left-applied in world or right-applied in body.
+    translation_frame: world
+    rotation_frame: body
+    rotation_pivot: geometry_center
+
+    # Parameters used only when motion_mode is orbit.
+    spin_turns: 1.0
+    nod_degrees: 25.0
+    world_frame: camera
+    camera_frame: camera
+    gt_frame: object_gt
+    gt_pose_topic: /m3t/pose_gt
+    gt_marker_topic: /m3t/marker_gt
+    camera_intrinsics: [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
+    color_topic: /camera/color/image_raw
+    depth_topic: /camera/depth/image_raw
+    color_info_topic: /camera/color/camera_info
+    depth_info_topic: /camera/depth/camera_info
+
+m3t_image_publisher:
+  ros__parameters:
+    publish_rate: 60.0
+    gt_publish_rate: 60.0
+    loop: true
+    publish_gt: true
+    world_frame: camera
+    camera_frame: camera
+    gt_frame: object_gt
+    gt_pose_topic: /m3t/pose_gt
+    gt_marker_topic: /m3t/marker_gt
+    color_pattern: "frame%04d.png"
+    depth_pattern: "depth%04d.png"
+    start_index: 0
+    n_frames: 0
+    camera_intrinsics: [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
+    color_topic: /camera/color/image_raw
+    depth_topic: /camera/depth/image_raw
+    color_info_topic: /camera/color/camera_info
+    depth_info_topic: /camera/depth/camera_info

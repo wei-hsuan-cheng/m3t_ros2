@@ -1,0 +1,17 @@
+/**:
+  ros__parameters:
+    object_name: triangle
+    geometry_path: "../../assets/triangle/model.obj"
+    geometry_unit_in_meter: 1.0
+    geometry_counterclockwise: true
+    geometry_enable_culling: true
+    geometry2body_pose: [
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, -0.006,
+      0.0, 0.0, 0.0, 1.0
+    ]
+    body_id: 150
+    region_id: 150
+    # [x, y, z, roll, pitch, yaw], with angles in radians.
+    initial_pose: [0.0095765, 0.0254747, 0.248747, 0.0, 0.0, 0.0]

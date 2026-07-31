@@ -1,0 +1,25 @@
+# Copy this file for a recorded sequence and edit only ROS parameters.
+# gt_poses is a flat list of row-major 4x4 body-to-world matrices, one per
+# frame. Add another 16 values for every additional frame.
+m3t_image_publisher:
+  ros__parameters:
+    sequence_dir: "/data/my_object_sequence"
+    color_pattern: "frame%04d.png"
+    depth_pattern: "depth%04d.png"
+    start_index: 0
+    n_frames: 1
+    publish_rate: 30.0
+    loop: false
+    publish_gt: true
+    world_frame: camera
+    camera_frame: camera
+    gt_frame: object_gt
+    camera_intrinsics: [
+      698.128, 698.617, 478.459, 274.426, 960.0, 540.0
+    ]
+    gt_poses: [
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.03,
+      0.0, 0.0, 1.0, 0.30,
+      0.0, 0.0, 0.0, 1.0
+    ]

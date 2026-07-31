@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Runtime smoke tests for the installed package.
+#
+#   ros2 run m3t_ros2 m3t_smoke_test synthetic
+#   ros2 run m3t_ros2 m3t_smoke_test external-camera
+#
+# The second mode launches the tracker with source:=topics, proves that it does
+# not initialize without CameraInfo, then starts a separate synthetic camera
+# process and waits for a TRACKED result.
+
+mode="${1:-synthetic}"
+object="${M3T_SMOKE_OBJECT:-box}"
+modalities="${M3T_SMOKE_MODALITIES:-region,depth}"
+init_mode="${M3T_SMOKE_INIT_MODE:-gt}"
+timeout_seconds="${M3T_SMOKE_TIMEOUT:-75}"
+log_root="${M3T_SMOKE_LOG_DIR:-${ROS_HOME:-${HOME}/.ros}/m3t/smoke_logs}"
+cache_dir="${M3T_MODEL_CACHE_DIR:-${PWD}/auto_generated/m3t/${object}}"
+mkdir -p "${log_root}" "${cache_dir}"
+
+# Keep the smoke test isolated from cameras and stale discovery data on the
+# caller's normal ROS domain. Both child processes inherit this domain.
+export ROS_DOMAIN_ID="${M3T_SMOKE_DOMAIN_ID:-$((100 + $$ % 100))}"
+export ROS_LOCALHOST_ONLY=1
+
+if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+  export XDG_RUNTIME_DIR="${ROS_HOME:-${HOME}/.ros}/m3t/runtime-$(id -u)"
+  mkdir -p "${XDG_RUNTIME_DIR}"
+  chmod 700 "${XDG_RUNTIME_DIR}"
+fi
+
+tracker_pid=""
+source_pid=""
+
+terminate_process_group() {
+  local group_id="$1"
+  if ! kill -0 -- "-${group_id}" 2>/dev/null; then
+    wait "${group_id}" 2>/dev/null || true
+    return
+  fi
+  kill -TERM -- "-${group_id}" 2>/dev/null || true
+  for _ in $(seq 1 40); do
+    if ! kill -0 -- "-${group_id}" 2>/dev/null; then
+      wait "${group_id}" 2>/dev/null || true
+      return
+    fi
+    sleep 0.1
+  done
+  kill -KILL -- "-${group_id}" 2>/dev/null || true
+  wait "${group_id}" 2>/dev/null || true
+}
+
+cleanup() {
+  set +e
+  if [[ -n "${source_pid}" ]]; then
+    terminate_process_group "${source_pid}"
+  fi
+  if [[ -n "${tracker_pid}" ]]; then
+    terminate_process_group "${tracker_pid}"
+  fi
+}
+trap cleanup EXIT INT TERM
+
+fail_with_log() {
+  local message="$1"
+  local log_file="$2"
+  echo "FAIL: ${message}" >&2
+  echo "Last log lines (${log_file}):" >&2
+  tail -n 40 "${log_file}" >&2 || true
+  exit 1
+}
+
+wait_for_pattern() {
+  local process_id="$1"
+  local pattern="$2"
+  local log_file="$3"
+  local description="$4"
+  local start_time="${SECONDS}"
+  while (( SECONDS - start_time < timeout_seconds )); do
+    if grep -qE "${pattern}" "${log_file}" 2>/dev/null; then
+      return 0
+    fi
+    if ! kill -0 "${process_id}" 2>/dev/null; then
+      fail_with_log "${description}: process exited early" "${log_file}"
+    fi
+    sleep 0.25
+  done
+  fail_with_log "${description}: timed out after ${timeout_seconds}s" "${log_file}"
+}
+
+run_tracker_launch() {
+  local source_mode="$1"
+  local tracker_log="$2"
+  setsid ros2 launch m3t_ros2 m3t.launch.py \
+    source:="${source_mode}" \
+    object:="${object}" \
+    modalities:="${modalities}" \
+    init_mode:="${init_mode}" \
+    model_cache_dir:="${cache_dir}" \
+    rviz:=false \
+    log_period:=1.0 \
+    >"${tracker_log}" 2>&1 &
+  tracker_pid="$!"
+}
+
+case "${mode}" in
+  synthetic)
+    tracker_log="${log_root}/synthetic_${object}.log"
+    : >"${tracker_log}"
+    echo "Launching integrated synthetic smoke test..."
+    run_tracker_launch synthetic "${tracker_log}"
+    wait_for_pattern "${tracker_pid}" "TRACKED" "${tracker_log}" \
+      "synthetic tracker did not reach TRACKED"
+    echo "PASS: synthetic ${object} (${modalities}) reached TRACKED"
+    echo "Log: ${tracker_log}"
+    ;;
+
+  external-camera)
+    tracker_log="${log_root}/external_tracker_${object}.log"
+    source_log="${log_root}/external_camera_${object}.log"
+    : >"${tracker_log}"
+    : >"${source_log}"
+
+    echo "Launching tracker only (source:=topics)..."
+    run_tracker_launch topics "${tracker_log}"
+    wait_for_pattern "${tracker_pid}" \
+      "waiting for RGB image \\+ CameraInfo" "${tracker_log}" \
+      "tracker did not enter its CameraInfo wait state"
+    sleep 2
+    if grep -q "got first frames" "${tracker_log}"; then
+      fail_with_log "tracker initialized without an external camera" \
+        "${tracker_log}"
+    fi
+    if ros2 node list 2>/dev/null | grep -q '^/m3t_synthetic_source$'; then
+      fail_with_log "source:=topics unexpectedly launched a camera node" \
+        "${tracker_log}"
+    fi
+    echo "PASS: tracker stayed idle without images/CameraInfo"
+
+    package_prefix="$(ros2 pkg prefix m3t_ros2)"
+    package_share="${package_prefix}/share/m3t_ros2"
+    geometry_path="${package_share}/assets/${object}/model.obj"
+    object_config="${package_share}/config/objects/${object}.yaml"
+    if [[ ! -f "${geometry_path}" || ! -f "${object_config}" ]]; then
+      fail_with_log "external-camera smoke test needs a built-in object" \
+        "${tracker_log}"
+    fi
+
+    echo "Starting a separate camera publisher process..."
+    setsid ros2 run m3t_ros2 m3t_synthetic_source_node --ros-args \
+      --params-file "${package_share}/config/m3t.yaml" \
+      --params-file "${object_config}" \
+      -p geometry_path:="${geometry_path}" \
+      >"${source_log}" 2>&1 &
+    source_pid="$!"
+
+    wait_for_pattern "${tracker_pid}" "got first frames" "${tracker_log}" \
+      "tracker did not start after images and CameraInfo arrived"
+    wait_for_pattern "${tracker_pid}" "TRACKED" "${tracker_log}" \
+      "external-camera tracker did not reach TRACKED"
+    echo "PASS: external camera supplied CameraInfo and tracking reached TRACKED"
+    echo "Tracker log: ${tracker_log}"
+    echo "Camera log:  ${source_log}"
+    ;;
+
+  *)
+    echo "usage: ros2 run m3t_ros2 m3t_smoke_test {synthetic|external-camera}" >&2
+    exit 2
+    ;;
+esac
