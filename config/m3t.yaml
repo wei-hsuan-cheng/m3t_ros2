@@ -1,9 +1,9 @@
 /**:
   ros__parameters:
     # File paths
-    geometry_path: "$(var resolved_geometry_path)"
-    texture_path: "$(var resolved_texture_path)"
-    mesh_resource: "$(var resolved_mesh_resource)"
+    geometry_path: $(var resolved_geometry_path)
+    texture_path: $(var resolved_texture_path)
+    mesh_resource: $(var resolved_mesh_resource)
     
     # Scales
     mesh_scale: 1.0
@@ -17,14 +17,14 @@
     # Topics
     gt_pose_topic: /m3t/pose_gt
     gt_marker_topic: /m3t/marker_gt
-    color_topic: "$(var color_topic)"
-    depth_topic: "$(var depth_topic)"
-    color_info_topic: "$(var color_info_topic)"
-    depth_info_topic: "$(var depth_info_topic)"
+    color_topic: $(var color_topic)
+    depth_topic: $(var depth_topic)
+    color_info_topic: $(var color_info_topic)
+    depth_info_topic: $(var depth_info_topic)
 
 m3t_tracker_node:
   ros__parameters:
-    modalities: "$(var modalities)"
+    modalities: $(var modalities)
     track_rate: 0.0
     publish_rate: 60.0
     log_period: 2.0
@@ -37,12 +37,12 @@ m3t_tracker_node:
     convergence_rotation_threshold_deg: 0.05
     convergence_required_rounds: 5
     publisher_thread_nice: 5 # Tracker remains at normal nice=0; publisher is deliberately lower.
-    image_outputs: "$(var image_outputs)"
+    image_outputs: $(var image_outputs)
     sync_tolerance: 0.02
     lost_threshold: 0.05
     lost_rotation_threshold: 45.0
     use_gt_initial_pose: $(var resolved_use_gt_initial_pose)
-    model_cache_dir: "$(var model_cache_dir)"
+    model_cache_dir: $(var model_cache_dir)
 
 m3t_synthetic_source:
   ros__parameters:
@@ -52,7 +52,7 @@ m3t_synthetic_source:
     depth_noise: 10.0
     distortion: 0.05
 
-    motion_mode: "$(var motion_mode)" # six_dof_sine | orbit | static
+    motion_mode: $(var motion_mode) # six_dof_sine | orbit | static
 
     # Independent x/y/z sinusoids.
     # Independent roll/pitch/yaw sinusoids using ZYX composition.
