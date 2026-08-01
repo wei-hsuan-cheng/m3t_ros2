@@ -43,14 +43,13 @@ colcon build --symlink-install \
 m3t_ros2/
   assets/<object>/                   package-local object assets
   assets/ycb/<object>/               YCB mesh, material, and texture assets
-  config/m3t.yaml                    common node parameters
-  config/launch_parameters.yaml      launch-argument substitutions
+  config/m3t.yaml                    common parameters and launch substitutions
   config/objects/<object>.yaml       package-local object parameters
   config/objects/ycb/<object>.yaml   YCB object parameters
   launch/m3t.launch.py               one launch interface
 ```
 
-The launch file passes `m3t.yaml`, the selected object YAML, and the optional sequence YAML directly as substitution-enabled ROS parameter files. Launch arguments override parameters through `config/launch_parameters.yaml`, using entries such as `publish_rate: $(var publish_rate)`; the launch file does not construct node parameter dictionaries.
+The launch file loads the selected object YAML, optional sequence YAML, and then `m3t.yaml` as substitution-enabled ROS parameter files. Launch arguments map directly into `m3t.yaml` with entries such as `publish_rate: $(var publish_rate)`; the launch file does not construct node parameter dictionaries.
 
 ## Run with the online synthetic source
 
@@ -62,7 +61,7 @@ ros2 launch m3t_ros2 m3t.launch.py \
 
 Per-frame refinement is configured under `m3t_tracker_node.ros__parameters` in `config/m3t.yaml`. The tracker runs at least `min_corr_iterations` and at most `max_corr_iterations`, with `n_update_iterations` pose updates per correspondence round. It stops early after both pose-change thresholds remain satisfied for `convergence_required_rounds` consecutive rounds. Set `adaptive_iterations: false` to always run `max_corr_iterations`.
 
-Tracker image topics are disabled by default. Use `image_outputs:=overlay,keypoints` (or either value alone) when those debug images are needed.
+Overlay and keypoint image topics are enabled by default for RViz. Use `image_outputs:=none` when those debug images are not needed.
 
 ```yaml
 adaptive_iterations: true

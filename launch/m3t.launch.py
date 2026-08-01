@@ -163,9 +163,6 @@ def launch_setup(context, *args, **kwargs):
     if not os.path.isfile(config_file):
         raise RuntimeError(f"main config does not exist: {config_file}")
 
-    launch_parameters_file = os.path.join(
-        package_share, "config", "launch_parameters.yaml"
-    )
     sequence_config = _value(context, "sequence_config")
     if sequence_config:
         sequence_config = os.path.abspath(os.path.expanduser(sequence_config))
@@ -202,8 +199,8 @@ def launch_setup(context, *args, **kwargs):
 
     def common_parameters():
         return [
-            _parameter_file(config_file),
             _parameter_file(object_data["config"]),
+            _parameter_file(config_file),
         ]
 
     if source_mode == "synthetic":
@@ -213,8 +210,7 @@ def launch_setup(context, *args, **kwargs):
                 executable="m3t_synthetic_source_node",
                 name="m3t_synthetic_source",
                 output="screen",
-                parameters=common_parameters()
-                + [_parameter_file(launch_parameters_file)],
+                parameters=common_parameters(),
             )
         )
     elif source_mode == "sequence":
@@ -224,10 +220,10 @@ def launch_setup(context, *args, **kwargs):
                 executable="m3t_image_publisher_node",
                 name="m3t_image_publisher",
                 output="screen",
-                parameters=common_parameters()
-                + [
+                parameters=[
+                    _parameter_file(object_data["config"]),
                     _parameter_file(sequence_config),
-                    _parameter_file(launch_parameters_file),
+                    _parameter_file(config_file),
                 ],
             )
         )
@@ -238,8 +234,7 @@ def launch_setup(context, *args, **kwargs):
             executable="m3t_tracker_node",
             name="m3t_tracker_node",
             output="screen",
-            parameters=common_parameters()
-            + [_parameter_file(launch_parameters_file)],
+            parameters=common_parameters(),
         )
     )
     actions.append(

@@ -154,11 +154,17 @@ case "${mode}" in
     fi
 
     echo "Starting a separate camera publisher process..."
-    setsid ros2 run m3t_ros2 m3t_synthetic_source_node --ros-args \
-      --params-file "${package_share}/config/m3t.yaml" \
-      --params-file "${object_config}" \
-      -p geometry_path:="${geometry_path}" \
-      >"${source_log}" 2>&1 &
+    source_command=(
+      ros2 run m3t_ros2 m3t_synthetic_source_node --ros-args
+      --params-file "${object_config}"
+      -p geometry_path:="${geometry_path}"
+      -p mesh_resource:="file://${geometry_path}"
+    )
+    texture_path="$(dirname "${geometry_path}")/texture_map.png"
+    if [[ -f "${texture_path}" ]]; then
+      source_command+=(-p texture_path:="${texture_path}")
+    fi
+    setsid "${source_command[@]}" >"${source_log}" 2>&1 &
     source_pid="$!"
 
     wait_for_pattern "${tracker_pid}" "got first frames" "${tracker_log}" \
