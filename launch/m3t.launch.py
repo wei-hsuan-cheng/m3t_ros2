@@ -277,7 +277,7 @@ def generate_launch_description():
             description="Main ROS parameter YAML",
         ),
         DeclareLaunchArgument("mesh_scale", default_value="1.0"),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument("depth_scale", default_value="0.001"),DeclareLaunchArgument(
             "modalities",
             default_value="region,depth,texture",
             description="Comma-separated combination of region, depth, and texture",
@@ -307,11 +307,6 @@ def generate_launch_description():
             ),
         ),
         DeclareLaunchArgument("sync_tolerance", default_value="0.02"),
-        DeclareLaunchArgument("n_frames", default_value="240"),
-        DeclareLaunchArgument("loop", default_value="true"),
-        DeclareLaunchArgument("depth_noise", default_value="10.0"),
-        DeclareLaunchArgument("distortion", default_value="0.05"),
-        DeclareLaunchArgument("depth_scale", default_value="0.001"),
         DeclareLaunchArgument(
             "motion_mode",
             default_value="six_dof_sine",

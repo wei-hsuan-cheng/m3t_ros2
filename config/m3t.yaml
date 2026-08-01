@@ -6,6 +6,16 @@
     texture_path: "$(var resolved_texture_path)"
     mesh_resource: "$(var resolved_mesh_resource)"
     mesh_scale: $(var mesh_scale)
+    depth_scale: $(var depth_scale)
+    world_frame: "$(var world_frame)"
+    camera_frame: "$(var camera_frame)"
+    gt_frame: "$(var gt_frame)"
+    gt_pose_topic: /m3t/pose_gt
+    gt_marker_topic: /m3t/marker_gt
+    color_topic: "$(var color_topic)"
+    depth_topic: "$(var depth_topic)"
+    color_info_topic: "$(var color_info_topic)"
+    depth_info_topic: "$(var depth_info_topic)"
 
 m3t_tracker_node:
   ros__parameters:
@@ -25,27 +35,18 @@ m3t_tracker_node:
     publisher_thread_nice: 5
     image_outputs: "$(var image_outputs)"
     sync_tolerance: $(var sync_tolerance)
-    depth_scale: $(var depth_scale)
     lost_threshold: 0.05
     lost_rotation_threshold: 45.0
     use_gt_initial_pose: $(var resolved_use_gt_initial_pose)
-    world_frame: "$(var world_frame)"
-    gt_frame: "$(var gt_frame)"
     model_cache_dir: "$(var model_cache_dir)"
-    color_topic: "$(var color_topic)"
-    depth_topic: "$(var depth_topic)"
-    color_info_topic: "$(var color_info_topic)"
-    depth_info_topic: "$(var depth_info_topic)"
 
 m3t_synthetic_source:
   ros__parameters:
     publish_rate: $(var source_rate)
     gt_publish_rate: 60.0
-    n_frames: $(var n_frames)
-    loop: $(var loop)
-    depth_noise: $(var depth_noise)
-    distortion: $(var distortion)
-    depth_scale: $(var depth_scale)
+    n_frames: 240
+    depth_noise: 10.0
+    distortion: 0.05
 
     motion_mode: "$(var motion_mode)" # six_dof_sine | orbit | static
 
@@ -77,29 +78,11 @@ m3t_synthetic_source:
     # Parameters used only when motion_mode is orbit.
     spin_turns: 1.0
     nod_degrees: 25.0
-    world_frame: "$(var world_frame)"
-    camera_frame: "$(var camera_frame)"
-    gt_frame: "$(var gt_frame)"
-    gt_pose_topic: /m3t/pose_gt
-    gt_marker_topic: /m3t/marker_gt
+
     camera_intrinsics: [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
-    color_topic: "$(var color_topic)"
-    depth_topic: "$(var depth_topic)"
-    color_info_topic: "$(var color_info_topic)"
-    depth_info_topic: "$(var depth_info_topic)"
 
 m3t_image_publisher:
   ros__parameters:
     publish_rate: $(var source_rate)
     gt_publish_rate: 60.0
-    loop: $(var loop)
     publish_gt: $(var resolved_publish_gt)
-    world_frame: "$(var world_frame)"
-    camera_frame: "$(var camera_frame)"
-    gt_frame: "$(var gt_frame)"
-    gt_pose_topic: /m3t/pose_gt
-    gt_marker_topic: /m3t/marker_gt
-    color_topic: "$(var color_topic)"
-    depth_topic: "$(var depth_topic)"
-    color_info_topic: "$(var color_info_topic)"
-    depth_info_topic: "$(var depth_info_topic)"
