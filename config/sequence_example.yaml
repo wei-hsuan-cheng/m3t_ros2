@@ -8,12 +8,6 @@ m3t_image_publisher:
     depth_pattern: "depth%04d.png"
     start_index: 0
     n_frames: 1
-    publish_rate: 30.0
-    loop: false
-    publish_gt: true
-    world_frame: camera
-    camera_frame: camera
-    gt_frame: object_gt
     camera_intrinsics: [
       698.128, 698.617, 478.459, 274.426, 960.0, 540.0
     ]

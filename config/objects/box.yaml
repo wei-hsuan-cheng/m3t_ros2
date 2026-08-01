@@ -2,6 +2,7 @@
   ros__parameters:
     object_name: box
     geometry_path: "../../assets/box/model.obj"
+    mesh_use_embedded_materials: false
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false

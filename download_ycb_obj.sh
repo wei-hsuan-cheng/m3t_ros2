@@ -134,7 +134,7 @@ EOF
     object_name: ${asset_name}
     geometry_path: "../../../assets/ycb/${asset_name}/model.obj"
     texture_path: "../../../assets/ycb/${asset_name}/texture_map.png"
-    modalities: "region,depth,texture"
+    mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false

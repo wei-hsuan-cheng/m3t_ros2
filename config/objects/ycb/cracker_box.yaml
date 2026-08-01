@@ -3,7 +3,7 @@
     object_name: cracker_box
     geometry_path: "../../../assets/ycb/cracker_box/model.obj"
     texture_path: "../../../assets/ycb/cracker_box/texture_map.png"
-    modalities: "region,depth,texture"
+    mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false

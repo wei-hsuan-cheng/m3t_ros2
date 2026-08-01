@@ -1,0 +1,59 @@
+# Loaded last by m3t.launch.py so explicit launch arguments override the base,
+# object, and sequence parameter files.
+/**:
+  ros__parameters:
+    geometry_path: "$(var resolved_geometry_path)"
+    texture_path: "$(var resolved_texture_path)"
+    mesh_resource: "$(var resolved_mesh_resource)"
+    mesh_scale: $(var mesh_scale)
+
+m3t_tracker_node:
+  ros__parameters:
+    modalities: "$(var modalities)"
+    model_cache_dir: "$(var model_cache_dir)"
+    track_rate: $(var track_rate)
+    publish_rate: $(var publish_rate)
+    log_period: $(var log_period)
+    event_driven: $(var event_driven)
+    image_outputs: "$(var image_outputs)"
+    sync_tolerance: $(var sync_tolerance)
+    depth_scale: $(var depth_scale)
+    use_gt_initial_pose: $(var resolved_use_gt_initial_pose)
+    world_frame: "$(var world_frame)"
+    gt_frame: "$(var gt_frame)"
+    color_topic: "$(var color_topic)"
+    depth_topic: "$(var depth_topic)"
+    color_info_topic: "$(var color_info_topic)"
+    depth_info_topic: "$(var depth_info_topic)"
+
+m3t_synthetic_source:
+  ros__parameters:
+    publish_rate: $(var source_rate)
+    n_frames: $(var n_frames)
+    loop: $(var loop)
+    depth_noise: $(var depth_noise)
+    distortion: $(var distortion)
+    depth_scale: $(var depth_scale)
+    motion_mode: "$(var motion_mode)"
+    spin_turns: $(var spin_turns)
+    nod_degrees: $(var nod_degrees)
+    world_frame: "$(var world_frame)"
+    camera_frame: "$(var camera_frame)"
+    gt_frame: "$(var gt_frame)"
+    color_topic: "$(var color_topic)"
+    depth_topic: "$(var depth_topic)"
+    color_info_topic: "$(var color_info_topic)"
+    depth_info_topic: "$(var depth_info_topic)"
+
+m3t_image_publisher:
+  ros__parameters:
+    publish_rate: $(var source_rate)
+    loop: $(var loop)
+    publish_gt: $(var resolved_publish_gt)
+    world_frame: "$(var world_frame)"
+    camera_frame: "$(var camera_frame)"
+    gt_frame: "$(var gt_frame)"
+    color_topic: "$(var color_topic)"
+    depth_topic: "$(var depth_topic)"
+    color_info_topic: "$(var color_info_topic)"
+    depth_info_topic: "$(var depth_info_topic)"

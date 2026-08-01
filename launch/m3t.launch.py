@@ -26,10 +26,12 @@ from launch.actions import (
     DeclareLaunchArgument,
     OpaqueFunction,
     SetEnvironmentVariable,
+    SetLaunchConfiguration,
 )
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterFile
 
 
 BUILTIN_OBJECTS = {
@@ -44,10 +46,6 @@ BUILTIN_OBJECTS = {
 
 def _value(context, name):
     return LaunchConfiguration(name).perform(context)
-
-
-def _bool(context, name):
-    return _value(context, name).strip().lower() in ("1", "true", "yes", "on")
 
 
 def _read_ros_parameters(path, node_name):
@@ -75,10 +73,21 @@ def _xdg_runtime_dir():
     return runtime_dir
 
 
+def _absolute_asset_path(path, config_path, parameter_name):
+    if not path:
+        return ""
+    resolved = os.path.expanduser(str(path))
+    if not os.path.isabs(resolved):
+        resolved = os.path.join(os.path.dirname(config_path), resolved)
+    resolved = os.path.abspath(resolved)
+    if not os.path.isfile(resolved):
+        raise RuntimeError(f"{parameter_name} asset does not exist: {resolved}")
+    return resolved
+
+
 def _resolve_object(context):
-    object_name = _value(context, "object")
+    selected_object = _value(context, "object")
     object_config_override = _value(context, "object_config")
-    mesh_override = _value(context, "mesh_resource")
     package_share = get_package_share_directory("m3t_ros2")
 
     if object_config_override:
@@ -86,265 +95,170 @@ def _resolve_object(context):
             os.path.expanduser(object_config_override)
         )
     else:
-        if object_name not in BUILTIN_OBJECTS:
+        if selected_object not in BUILTIN_OBJECTS:
             supported = ", ".join(sorted(BUILTIN_OBJECTS))
             raise RuntimeError(
-                f"unknown built-in object '{object_name}' (choose {supported}) "
-                "or pass object_config:=/absolute/path/object.yaml"
+                f"unknown built-in object '{selected_object}' "
+                f"(choose {supported}) or pass "
+                "object_config:=/absolute/path/object.yaml"
             )
         object_config = os.path.join(
-            package_share, "config", "objects", BUILTIN_OBJECTS[object_name]
+            package_share,
+            "config",
+            "objects",
+            BUILTIN_OBJECTS[selected_object],
         )
 
     if not os.path.isfile(object_config):
         raise RuntimeError(f"object config does not exist: {object_config}")
+
     parameters = _read_ros_parameters(object_config, "m3t_tracker_node")
-    geometry_path = parameters.get("geometry_path", "")
+    geometry_path = _absolute_asset_path(
+        parameters.get("geometry_path", ""),
+        object_config,
+        "geometry_path",
+    )
     if not geometry_path:
         raise RuntimeError(f"geometry_path missing in {object_config}")
-    if not os.path.isabs(geometry_path):
-        geometry_path = os.path.abspath(
-            os.path.join(os.path.dirname(object_config), geometry_path)
-        )
-    if not os.path.isfile(geometry_path):
-        raise RuntimeError(f"geometry asset does not exist: {geometry_path}")
-
-    object_name = str(parameters.get("object_name", object_name))
-    mesh_resource = mesh_override or "file://" + geometry_path
-    texture_path = str(parameters.get("texture_path", ""))
-    if texture_path and not os.path.isabs(texture_path):
-        texture_path = os.path.abspath(
-            os.path.join(os.path.dirname(object_config), texture_path)
-        )
-    if texture_path and not os.path.isfile(texture_path):
-        raise RuntimeError(f"texture asset does not exist: {texture_path}")
-    default_modalities = str(
-        parameters.get("modalities", "region,depth")
-    )
-    embedded_mode = _value(
-        context, "mesh_use_embedded_materials"
-    ).strip().lower()
-    if embedded_mode == "auto":
-        embedded = bool(texture_path)
-    elif embedded_mode in ("1", "true", "yes", "on"):
-        embedded = True
-    elif embedded_mode in ("0", "false", "no", "off"):
-        embedded = False
-    else:
-        raise RuntimeError(
-            "mesh_use_embedded_materials must be auto, true, or false"
-        )
-    return (
-        object_name,
+    texture_path = _absolute_asset_path(
+        parameters.get("texture_path", ""),
         object_config,
-        geometry_path,
-        texture_path,
-        default_modalities,
-        mesh_resource,
-        embedded,
+        "texture_path",
     )
+
+    mesh_resource = str(parameters.get("mesh_resource", "")).strip()
+    if not mesh_resource:
+        mesh_resource = "file://" + geometry_path
+
+    return {
+        "config": object_config,
+        "geometry_path": geometry_path,
+        "texture_path": texture_path,
+        "mesh_resource": mesh_resource,
+    }
+
+
+def _parameter_file(path):
+    return ParameterFile(path, allow_substs=True)
+
+
+def _launch_value(value):
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
 
 
 def launch_setup(context, *args, **kwargs):
+    del args, kwargs
     source_mode = _value(context, "source").strip().lower()
     if source_mode not in ("synthetic", "sequence", "topics"):
         raise RuntimeError("source must be one of: synthetic, sequence, topics")
 
-    (
-        object_name,
-        object_config,
-        geometry_path,
-        texture_path,
-        default_modalities,
-        mesh_resource,
-        mesh_embedded,
-    ) = _resolve_object(context)
     package_share = get_package_share_directory("m3t_ros2")
-    config_file = _value(context, "config_file") or os.path.join(
-        package_share, "config", "m3t.yaml"
+    object_data = _resolve_object(context)
+
+    config_file = os.path.abspath(
+        os.path.expanduser(_value(context, "config_file"))
     )
-    config_file = os.path.abspath(os.path.expanduser(config_file))
     if not os.path.isfile(config_file):
         raise RuntimeError(f"main config does not exist: {config_file}")
+
+    launch_parameters_file = os.path.join(
+        package_share, "config", "launch_parameters.yaml"
+    )
     sequence_config = _value(context, "sequence_config")
-    sequence_parameters = {}
     if sequence_config:
         sequence_config = os.path.abspath(os.path.expanduser(sequence_config))
         if not os.path.isfile(sequence_config):
             raise RuntimeError(
                 f"sequence config does not exist: {sequence_config}"
             )
-        sequence_parameters = _read_ros_parameters(
-            sequence_config, "m3t_image_publisher"
+    if source_mode == "sequence" and not sequence_config:
+        raise RuntimeError(
+            "sequence_config is required when source:=sequence"
         )
-    modalities_override = _value(context, "modalities").strip()
-    modalities = (
-        default_modalities
-        if modalities_override in ("", "auto")
-        else modalities_override
-    )
-    sequence_dir = _value(context, "sequence_dir") or str(
-        sequence_parameters.get("sequence_dir", "")
-    )
-    if sequence_dir:
-        sequence_dir = os.path.abspath(os.path.expanduser(sequence_dir))
-
-    cache_override = _value(context, "model_cache_dir")
-    model_cache_dir = os.path.abspath(
-        os.path.expanduser(
-            cache_override
-            or os.path.join("auto_generated", "m3t", object_name)
-        )
-    )
 
     init_mode = _value(context, "init_mode").strip().lower()
     if init_mode not in ("gt", "tf", "static"):
         raise RuntimeError("init_mode must be one of: gt, tf, static")
-    use_tf_initial_pose = init_mode in ("gt", "tf")
-    topics = {
-        "color_topic": _value(context, "color_topic"),
-        "depth_topic": _value(context, "depth_topic"),
-        "color_info_topic": _value(context, "color_info_topic"),
-        "depth_info_topic": _value(context, "depth_info_topic"),
-    }
-    world_frame = _value(context, "world_frame")
-    gt_frame = _value(context, "gt_frame")
-    source_rate = float(_value(context, "source_rate"))
 
-    nodes = [
+    resolved_values = {
+        "resolved_geometry_path": object_data["geometry_path"],
+        "resolved_texture_path": object_data["texture_path"],
+        "resolved_mesh_resource": object_data["mesh_resource"],
+        "resolved_use_gt_initial_pose": init_mode in ("gt", "tf"),
+        "resolved_publish_gt": init_mode == "gt",
+    }
+
+    actions = [
         SetEnvironmentVariable(
             name="XDG_RUNTIME_DIR", value=_xdg_runtime_dir()
         )
     ]
+    actions.extend(
+        SetLaunchConfiguration(name, _launch_value(value))
+        for name, value in resolved_values.items()
+    )
+
+    def common_parameters():
+        return [
+            _parameter_file(config_file),
+            _parameter_file(object_data["config"]),
+        ]
+
     if source_mode == "synthetic":
-        synthetic_overrides = {
-            "object_name": object_name,
-            "geometry_path": geometry_path,
-            "texture_path": texture_path,
-            "publish_rate": source_rate,
-            "n_frames": int(_value(context, "n_frames")),
-            "loop": _bool(context, "loop"),
-            "depth_noise": float(_value(context, "depth_noise")),
-            "distortion": float(_value(context, "distortion")),
-            "depth_scale": float(_value(context, "depth_scale")),
-            "world_frame": world_frame,
-            "camera_frame": _value(context, "camera_frame"),
-            "gt_frame": gt_frame,
-            "mesh_resource": mesh_resource,
-            "mesh_scale": float(_value(context, "mesh_scale")),
-            "mesh_use_embedded_materials": mesh_embedded,
-            **topics,
-        }
-        if _value(context, "motion_mode"):
-            synthetic_overrides["motion_mode"] = _value(
-                context, "motion_mode"
-            )
-        if _value(context, "spin_turns"):
-            synthetic_overrides["spin_turns"] = float(
-                _value(context, "spin_turns")
-            )
-        if _value(context, "nod_degrees"):
-            synthetic_overrides["nod_degrees"] = float(
-                _value(context, "nod_degrees")
-            )
-        nodes.append(
+        actions.append(
             Node(
                 package="m3t_ros2",
                 executable="m3t_synthetic_source_node",
                 name="m3t_synthetic_source",
                 output="screen",
-                parameters=[
-                    config_file,
-                    object_config,
-                    synthetic_overrides,
-                ],
+                parameters=common_parameters()
+                + [_parameter_file(launch_parameters_file)],
             )
         )
     elif source_mode == "sequence":
-        if not sequence_dir:
-            raise RuntimeError(
-                "sequence_dir is required when source:=sequence"
-            )
-        nodes.append(
+        actions.append(
             Node(
                 package="m3t_ros2",
                 executable="m3t_image_publisher_node",
                 name="m3t_image_publisher",
                 output="screen",
-                parameters=[
-                    config_file,
-                    object_config,
-                    *([sequence_config] if sequence_config else []),
-                    {
-                        "sequence_dir": sequence_dir,
-                        "object_name": object_name,
-                        "geometry_path": geometry_path,
-                        "publish_rate": source_rate,
-                        "loop": _bool(context, "loop"),
-                        "world_frame": world_frame,
-                        "publish_gt": init_mode == "gt",
-                        "mesh_resource": mesh_resource,
-                        "mesh_scale": float(_value(context, "mesh_scale")),
-                        "mesh_use_embedded_materials": mesh_embedded,
-                        **topics,
-                    }
+                parameters=common_parameters()
+                + [
+                    _parameter_file(sequence_config),
+                    _parameter_file(launch_parameters_file),
                 ],
             )
         )
 
-    nodes.append(
+    actions.append(
         Node(
             package="m3t_ros2",
             executable="m3t_tracker_node",
             name="m3t_tracker_node",
             output="screen",
-            parameters=[
-                config_file,
-                object_config,
-                {
-                    "object_name": object_name,
-                    "geometry_path": geometry_path,
-                    "modalities": modalities,
-                    "model_cache_dir": model_cache_dir,
-                    "depth_scale": float(_value(context, "depth_scale")),
-                    "sync_tolerance": float(_value(context, "sync_tolerance")),
-                    "event_driven": _bool(context, "event_driven"),
-                    "image_outputs": _value(context, "image_outputs"),
-                    "track_rate": float(_value(context, "track_rate")),
-                    "publish_rate": float(_value(context, "publish_rate")),
-                    "log_period": float(_value(context, "log_period")),
-                    "world_frame": world_frame,
-                    "mesh_resource": mesh_resource,
-                    "mesh_scale": float(_value(context, "mesh_scale")),
-                    "mesh_use_embedded_materials": mesh_embedded,
-                    "use_gt_initial_pose": use_tf_initial_pose,
-                    "gt_frame": gt_frame,
-                    **topics,
-                }
-            ],
+            parameters=common_parameters()
+            + [_parameter_file(launch_parameters_file)],
         )
     )
-
-    nodes.append(
+    actions.append(
         Node(
             package="rviz2",
             executable="rviz2",
             name="rviz2",
             arguments=[
                 "-d",
-                os.path.join(
-                    get_package_share_directory("m3t_ros2"),
-                    "rviz",
-                    "m3t.rviz",
-                ),
+                os.path.join(package_share, "rviz", "m3t.rviz"),
             ],
             condition=IfCondition(LaunchConfiguration("rviz")),
         )
     )
-    return nodes
+    return actions
 
 
 def generate_launch_description():
+    package_share = get_package_share_directory("m3t_ros2")
     return LaunchDescription(
         [
             DeclareLaunchArgument(
@@ -360,39 +274,30 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "config_file",
-                default_value="",
-                description="Main ROS parameter YAML",
-            ),
-            DeclareLaunchArgument(
-                "mesh_resource",
-                default_value="",
-                description="RViz mesh URI for a custom body",
-            ),
-            DeclareLaunchArgument(
-                "mesh_use_embedded_materials",
-                default_value="auto",
-                description=(
-                    "auto uses OBJ/MTL materials when texture_path is set; "
-                    "true or false forces the behavior"
+                default_value=os.path.join(
+                    package_share, "config", "m3t.yaml"
                 ),
+                description="Main ROS parameter YAML",
             ),
             DeclareLaunchArgument("mesh_scale", default_value="1.0"),
             DeclareLaunchArgument(
                 "modalities",
                 default_value="region,depth,texture",
                 description=(
-                    "region, depth, texture, any combination, or auto to "
-                    "use the object YAML recommendation"
+                    "Comma-separated combination of region, depth, and texture"
                 ),
             ),
             DeclareLaunchArgument(
                 "model_cache_dir",
-                default_value="",
-                description=(
-                    "Writable model cache; default auto_generated/m3t/<object>"
+                default_value=PathJoinSubstitution(
+                    [
+                        "auto_generated",
+                        "m3t",
+                        LaunchConfiguration("object"),
+                    ]
                 ),
+                description="Writable per-object model cache",
             ),
-            DeclareLaunchArgument("sequence_dir", default_value=""),
             DeclareLaunchArgument(
                 "sequence_config",
                 default_value="",
@@ -424,19 +329,11 @@ def generate_launch_description():
             DeclareLaunchArgument("depth_scale", default_value="0.001"),
             DeclareLaunchArgument(
                 "motion_mode",
-                default_value="",
-                description="Optional synthetic override: orbit or static",
+                default_value="six_dof_sine",
+                description="Synthetic motion: six_dof_sine, orbit, or static",
             ),
-            DeclareLaunchArgument(
-                "spin_turns",
-                default_value="",
-                description="Optional synthetic YAML override",
-            ),
-            DeclareLaunchArgument(
-                "nod_degrees",
-                default_value="",
-                description="Optional synthetic YAML override",
-            ),
+            DeclareLaunchArgument("spin_turns", default_value="1.0"),
+            DeclareLaunchArgument("nod_degrees", default_value="25.0"),
             DeclareLaunchArgument("world_frame", default_value="camera"),
             DeclareLaunchArgument("camera_frame", default_value="camera"),
             DeclareLaunchArgument("gt_frame", default_value="object_gt"),

@@ -1,3 +1,5 @@
+# Concrete defaults used by the nodes; launch-time overrides are mapped in
+# launch_parameters.yaml.
 m3t_tracker_node:
   ros__parameters:
     modalities: "region,depth,texture" # at most "region,depth,texture"
@@ -14,7 +16,7 @@ m3t_tracker_node:
     convergence_required_rounds: 5
     # Tracker remains at normal nice=0; publisher is deliberately lower.
     publisher_thread_nice: 5
-    image_outputs: "overlay,keypoints"
+    image_outputs: "none"
     sync_tolerance: 0.02
     depth_scale: 0.001
     lost_threshold: 0.05
