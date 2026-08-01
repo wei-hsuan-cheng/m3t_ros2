@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     object_name: cylinder
-    geometry_path: "../../assets/cylinder/model.obj"
+    geometry_path: "../../../assets/primitives/cylinder/model.obj"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

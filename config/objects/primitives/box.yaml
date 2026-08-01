@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     object_name: box
-    geometry_path: "../../assets/box/model.obj"
+    geometry_path: "../../../assets/primitives/box/model.obj"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

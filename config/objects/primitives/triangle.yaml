@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     object_name: triangle
-    geometry_path: "../../assets/triangle/model.obj"
+    geometry_path: "../../../assets/primitives/triangle/model.obj"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

@@ -41,10 +41,10 @@ colcon build --symlink-install \
 
 ```text
 m3t_ros2/
-  assets/<object>/                   package-local object assets
+  assets/primitives/<object>/        primitive mesh assets
   assets/ycb/<object>/               YCB mesh, material, and texture assets
   config/m3t.yaml                    common parameters and launch substitutions
-  config/objects/<object>.yaml       package-local object parameters
+  config/objects/primitives/<object>.yaml  primitive object parameters
   config/objects/ycb/<object>.yaml   YCB object parameters
   launch/m3t.launch.py               one launch interface
 ```
@@ -136,10 +136,10 @@ The script downloads each object into `assets/ycb/<object>/` and creates its par
 
 ### 1. Prepare the mesh
 
-For an object stored inside this package, create:
+For an object stored inside this package, choose a dataset group. For example, create:
 
 ```text
-m3t_ros2/assets/my_object/
+m3t_ros2/assets/custom/my_object/
   model.obj
 ```
 
@@ -153,7 +153,7 @@ geometry_unit_in_meter: 1.0    # mesh coordinates are meters
 For synthetic RGB rendering with a real texture, the OBJ must contain valid UV coordinates. Place the texture beside the mesh, for example:
 
 ```text
-m3t_ros2/assets/my_object/
+m3t_ros2/assets/custom/my_object/
   model.obj
   model.mtl
   texture_map.png
@@ -166,7 +166,7 @@ m3t_ros2/assets/my_object/
 Create:
 
 ```text
-m3t_ros2/config/objects/my_object.yaml
+m3t_ros2/config/objects/custom/my_object.yaml
 ```
 
 Use this template:
@@ -175,10 +175,10 @@ Use this template:
 /**:
   ros__parameters:
     object_name: my_object
-    geometry_path: "../../assets/my_object/model.obj"
+    geometry_path: "../../../assets/custom/my_object/model.obj"
 
     # Optional synthetic-rendering texture:
-    # texture_path: "../../assets/my_object/texture_map.png"
+    # texture_path: "../../../assets/custom/my_object/texture_map.png"
     # Set true when the OBJ references an MTL and texture assets.
     mesh_use_embedded_materials: true
 
@@ -266,13 +266,13 @@ To launch the object with `object:=my_object`, add it to `BUILTIN_OBJECTS` in `l
 
 ```python
 BUILTIN_OBJECTS = {
-    "triangle": "triangle.yaml",
-    "box": "box.yaml",
-    "cylinder": "cylinder.yaml",
+    "triangle": os.path.join("primitives", "triangle.yaml"),
+    "box": os.path.join("primitives", "box.yaml"),
+    "cylinder": os.path.join("primitives", "cylinder.yaml"),
     "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
     "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
     "mustard": os.path.join("ycb", "mustard.yaml"),
-    "my_object": "my_object.yaml",
+    "my_object": os.path.join("custom", "my_object.yaml"),
 }
 ```
 

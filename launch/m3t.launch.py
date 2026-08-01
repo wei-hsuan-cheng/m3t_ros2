@@ -35,9 +35,9 @@ from launch_ros.parameter_descriptions import ParameterFile
 
 
 BUILTIN_OBJECTS = {
-    "triangle": "triangle.yaml",
-    "box": "box.yaml",
-    "cylinder": "cylinder.yaml",
+    "triangle": os.path.join("primitives", "triangle.yaml"),
+    "box": os.path.join("primitives", "box.yaml"),
+    "cylinder": os.path.join("primitives", "cylinder.yaml"),
     "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
     "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
     "mustard": os.path.join("ycb", "mustard.yaml"),

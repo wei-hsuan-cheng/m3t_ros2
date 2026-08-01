@@ -140,8 +140,8 @@ case "${mode}" in
 
     package_prefix="$(ros2 pkg prefix m3t_ros2)"
     package_share="${package_prefix}/share/m3t_ros2"
-    geometry_path="${package_share}/assets/${object}/model.obj"
-    object_config="${package_share}/config/objects/${object}.yaml"
+    geometry_path="${package_share}/assets/primitives/${object}/model.obj"
+    object_config="${package_share}/config/objects/primitives/${object}.yaml"
     if [[ ! -f "${geometry_path}" ]]; then
       geometry_path="${package_share}/assets/ycb/${object}/model.obj"
     fi
