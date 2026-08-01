@@ -36,7 +36,7 @@ struct RosPublisherConfig {
   std::string world_frame{"camera"};
   std::string mesh_resource;
   float mesh_scale{1.0f};
-  bool mesh_use_embedded_materials{false};
+  bool mesh_use_embedded_materials{true};
   bool publish_color{false};
   bool publish_depth{false};
   bool publish_overlay{false};

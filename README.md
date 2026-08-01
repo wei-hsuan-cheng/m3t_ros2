@@ -181,7 +181,7 @@ Use this template:
     # Optional synthetic-rendering texture:
     # texture_path: "../../assets/my_object/texture_map.png"
     # Set true when the OBJ references an MTL and texture assets.
-    mesh_use_embedded_materials: false
+    mesh_use_embedded_materials: true
 
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

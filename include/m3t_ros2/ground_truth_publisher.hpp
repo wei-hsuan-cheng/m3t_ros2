@@ -31,7 +31,7 @@ struct GroundTruthPublisherConfig {
   std::string marker_topic{"/m3t/marker_gt"};
   std::string mesh_resource;
   float mesh_scale{1.0f};
-  bool mesh_use_embedded_materials{false};
+  bool mesh_use_embedded_materials{true};
   double publish_rate{60.0};
   m3t::Transform3fA geometry2body_pose{m3t::Transform3fA::Identity()};
 };
