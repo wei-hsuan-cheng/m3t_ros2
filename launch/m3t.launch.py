@@ -317,8 +317,6 @@ def generate_launch_description():
             default_value="six_dof_sine",
             description="Synthetic motion: six_dof_sine, orbit, or static",
         ),
-        DeclareLaunchArgument("spin_turns", default_value="1.0"),
-        DeclareLaunchArgument("nod_degrees", default_value="25.0"),
         DeclareLaunchArgument("world_frame", default_value="camera"),
         DeclareLaunchArgument("camera_frame", default_value="camera"),
         DeclareLaunchArgument("gt_frame", default_value="object_gt"),

@@ -75,8 +75,8 @@ m3t_synthetic_source:
     rotation_pivot: geometry_center
 
     # Parameters used only when motion_mode is orbit.
-    spin_turns: $(var spin_turns)
-    nod_degrees: $(var nod_degrees)
+    spin_turns: 1.0
+    nod_degrees: 25.0
     world_frame: "$(var world_frame)"
     camera_frame: "$(var camera_frame)"
     gt_frame: "$(var gt_frame)"
