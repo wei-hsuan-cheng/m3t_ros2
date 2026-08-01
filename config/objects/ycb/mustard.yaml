@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     object_name: mustard
-    geometry_path: "../../assets/mustard/model.obj"
-    texture_path: "../../assets/mustard/texture_map.png"
+    geometry_path: "../../../assets/ycb/mustard/model.obj"
+    texture_path: "../../../assets/ycb/mustard/texture_map.png"
     modalities: "region,depth,texture"
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

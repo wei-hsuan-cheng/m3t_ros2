@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     object_name: cracker_box
-    geometry_path: "../../assets/cracker_box/model.obj"
-    texture_path: "../../assets/cracker_box/texture_map.png"
+    geometry_path: "../../../assets/ycb/cracker_box/model.obj"
+    texture_path: "../../../assets/ycb/cracker_box/texture_map.png"
     modalities: "region,depth,texture"
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

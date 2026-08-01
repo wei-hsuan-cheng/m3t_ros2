@@ -41,10 +41,12 @@ colcon build --symlink-install \
 
 ```text
 m3t_ros2/
-  assets/<object>/               mesh, material, and texture assets
-  config/m3t.yaml                common node parameters
-  config/objects/<object>.yaml   geometry and initial-pose parameters
-  launch/m3t.launch.py           one launch interface
+  assets/<object>/                   package-local object assets
+  assets/ycb/<object>/               YCB mesh, material, and texture assets
+  config/m3t.yaml                    common node parameters
+  config/objects/<object>.yaml       package-local object parameters
+  config/objects/ycb/<object>.yaml   YCB object parameters
+  launch/m3t.launch.py               one launch interface
 ```
 
 ## Run with the online synthetic source
@@ -126,7 +128,7 @@ chmod +x download_ycb_obj.sh
   006_mustard_bottle
 ```
 
-The script automatically download the object mesh and create the YAML file.
+The script downloads each object into `assets/ycb/<object>/` and creates its parameter file at `config/objects/ycb/<object>.yaml`.
 
 
 ### 1. Prepare the mesh
@@ -263,9 +265,9 @@ BUILTIN_OBJECTS = {
     "triangle": "triangle.yaml",
     "box": "box.yaml",
     "cylinder": "cylinder.yaml",
-    "master_chef_can": "master_chef_can.yaml",
-    "cracker_box": "cracker_box.yaml",
-    "mustard": "mustard.yaml",
+    "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
+    "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
+    "mustard": os.path.join("ycb", "mustard.yaml"),
     "my_object": "my_object.yaml",
 }
 ```

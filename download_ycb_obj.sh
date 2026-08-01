@@ -2,6 +2,7 @@
 
 # Download one or more YCB Google 16k textured models and create their M3T
 # object configs.
+# Assets and configs are grouped under assets/ycb and config/objects/ycb.
 # Run this script from the m3t_ros2 package directory.
 #
 # Usage:
@@ -73,8 +74,8 @@ download_object() {
   local ycb_object_id="$1"
   local asset_name="${ycb_object_id#???_}"
   local object_label="${asset_name//_/ }"
-  local object_dir="assets/${asset_name}"
-  local config_dir="config/objects"
+  local object_dir="assets/ycb/${asset_name}"
+  local config_dir="config/objects/ycb"
   local config_path="${config_dir}/${asset_name}.yaml"
   local source_url="https://ycb-benchmarks.s3.amazonaws.com/data/google/${ycb_object_id}_google_16k.tgz"
   local temp_dir="${temp_root}/${ycb_object_id}"
@@ -131,8 +132,8 @@ EOF
 /**:
   ros__parameters:
     object_name: ${asset_name}
-    geometry_path: "../../assets/${asset_name}/model.obj"
-    texture_path: "../../assets/${asset_name}/texture_map.png"
+    geometry_path: "../../../assets/ycb/${asset_name}/model.obj"
+    texture_path: "../../../assets/ycb/${asset_name}/texture_map.png"
     modalities: "region,depth,texture"
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

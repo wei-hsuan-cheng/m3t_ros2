@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     object_name: master_chef_can
-    geometry_path: "../../assets/master_chef_can/model.obj"
-    texture_path: "../../assets/master_chef_can/texture_map.png"
+    geometry_path: "../../../assets/ycb/master_chef_can/model.obj"
+    texture_path: "../../../assets/ycb/master_chef_can/texture_map.png"
     modalities: "region,depth,texture"
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

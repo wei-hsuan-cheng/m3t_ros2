@@ -142,6 +142,12 @@ case "${mode}" in
     package_share="${package_prefix}/share/m3t_ros2"
     geometry_path="${package_share}/assets/${object}/model.obj"
     object_config="${package_share}/config/objects/${object}.yaml"
+    if [[ ! -f "${geometry_path}" ]]; then
+      geometry_path="${package_share}/assets/ycb/${object}/model.obj"
+    fi
+    if [[ ! -f "${object_config}" ]]; then
+      object_config="${package_share}/config/objects/ycb/${object}.yaml"
+    fi
     if [[ ! -f "${geometry_path}" || ! -f "${object_config}" ]]; then
       fail_with_log "external-camera smoke test needs a built-in object" \
         "${tracker_log}"

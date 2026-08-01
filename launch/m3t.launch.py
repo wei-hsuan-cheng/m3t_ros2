@@ -36,9 +36,9 @@ BUILTIN_OBJECTS = {
     "triangle": "triangle.yaml",
     "box": "box.yaml",
     "cylinder": "cylinder.yaml",
-    "master_chef_can": "master_chef_can.yaml",
-    "cracker_box": "cracker_box.yaml",
-    "mustard": "mustard.yaml",
+    "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
+    "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
+    "mustard": os.path.join("ycb", "mustard.yaml"),
 }
 
 
