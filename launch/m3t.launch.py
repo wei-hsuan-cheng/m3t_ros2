@@ -132,8 +132,7 @@ def _launch_value(value):
     return str(value)
 
 
-def launch_setup(context, *args, **kwargs):
-    del args, kwargs
+def launch_setup(context):
     source_mode = _value(context, "source").strip().lower()
     if source_mode not in ("synthetic", "sequence", "topics"):
         raise RuntimeError("source must be one of: synthetic, sequence, topics")
