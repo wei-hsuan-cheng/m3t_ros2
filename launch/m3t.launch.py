@@ -298,7 +298,6 @@ def generate_launch_description():
         DeclareLaunchArgument("source_rate", default_value="60.0"),
         DeclareLaunchArgument("track_rate", default_value="0.0"),
         DeclareLaunchArgument("publish_rate", default_value="60.0"),
-        DeclareLaunchArgument("log_period", default_value="2.0"),
         DeclareLaunchArgument(
             "image_outputs",
             default_value="overlay,keypoints",
@@ -312,9 +311,6 @@ def generate_launch_description():
             default_value="six_dof_sine",
             description="Synthetic motion: six_dof_sine, orbit, or static",
         ),
-        DeclareLaunchArgument("world_frame", default_value="camera"),
-        DeclareLaunchArgument("camera_frame", default_value="camera"),
-        DeclareLaunchArgument("gt_frame", default_value="object_gt"),
         DeclareLaunchArgument(
             "color_topic", default_value="/camera/color/image_raw"
         ),

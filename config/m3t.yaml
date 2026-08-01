@@ -7,9 +7,9 @@
     mesh_resource: "$(var resolved_mesh_resource)"
     mesh_scale: $(var mesh_scale)
     depth_scale: $(var depth_scale)
-    world_frame: "$(var world_frame)"
-    camera_frame: "$(var camera_frame)"
-    gt_frame: "$(var gt_frame)"
+    world_frame: camera
+    camera_frame: camera
+    gt_frame: object_gt
     gt_pose_topic: /m3t/pose_gt
     gt_marker_topic: /m3t/marker_gt
     color_topic: "$(var color_topic)"
@@ -22,7 +22,7 @@ m3t_tracker_node:
     modalities: "$(var modalities)"
     track_rate: $(var track_rate)
     publish_rate: $(var publish_rate)
-    log_period: $(var log_period)
+    log_period: 2.0
     event_driven: true
     adaptive_iterations: true
     min_corr_iterations: 2
