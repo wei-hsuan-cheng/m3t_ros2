@@ -13,7 +13,7 @@ m3t_tracker_node:
     track_rate: $(var track_rate)
     publish_rate: $(var publish_rate)
     log_period: $(var log_period)
-    event_driven: $(var event_driven)
+    event_driven: true
     adaptive_iterations: true
     min_corr_iterations: 2
     max_corr_iterations: 10

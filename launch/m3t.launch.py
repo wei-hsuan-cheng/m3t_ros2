@@ -299,7 +299,6 @@ def generate_launch_description():
         DeclareLaunchArgument("track_rate", default_value="0.0"),
         DeclareLaunchArgument("publish_rate", default_value="60.0"),
         DeclareLaunchArgument("log_period", default_value="2.0"),
-        DeclareLaunchArgument("event_driven", default_value="true"),
         DeclareLaunchArgument(
             "image_outputs",
             default_value="overlay,keypoints",
