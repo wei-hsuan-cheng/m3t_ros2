@@ -55,7 +55,7 @@ The launch file loads the selected object YAML, optional sequence YAML, and then
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic object:=box rviz:=true
+  source:=synthetic object:=mustard rviz:=true
 # object:=box | triangle | cylinder | mustard | cracker_box |etc.
 ```
 

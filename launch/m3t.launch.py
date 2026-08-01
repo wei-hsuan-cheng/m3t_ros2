@@ -3,13 +3,13 @@
 
 Examples:
   ros2 launch m3t_ros2 m3t.launch.py \
-    object:=box \
-    modalities:=region,depth
+    object:=mustard \
+    modalities:=region,depth,texture
 
   ros2 launch m3t_ros2 m3t.launch.py \
     source:=sequence sequence_config:=/data/box/sequence.yaml \
     object:=box \
-    modalities:=region
+    modalities:=region,depth
 
   ros2 launch m3t_ros2 m3t.launch.py \
     source:=topics \
@@ -187,15 +187,13 @@ def launch_setup(context, *args, **kwargs):
         "resolved_publish_gt": init_mode == "gt",
     }
 
-    actions = [
-        SetEnvironmentVariable(
-            name="XDG_RUNTIME_DIR", value=_xdg_runtime_dir()
-        )
-    ]
-    actions.extend(
+    runtime_environment = SetEnvironmentVariable(
+        name="XDG_RUNTIME_DIR", value=_xdg_runtime_dir()
+    )
+    resolved_configurations = [
         SetLaunchConfiguration(name, _launch_value(value))
         for name, value in resolved_values.items()
-    )
+    ]
 
     def common_parameters():
         return [
@@ -203,150 +201,146 @@ def launch_setup(context, *args, **kwargs):
             _parameter_file(config_file),
         ]
 
+    source_nodes = []
     if source_mode == "synthetic":
-        actions.append(
-            Node(
-                package="m3t_ros2",
-                executable="m3t_synthetic_source_node",
-                name="m3t_synthetic_source",
-                output="screen",
-                parameters=common_parameters(),
-            )
-        )
-    elif source_mode == "sequence":
-        actions.append(
-            Node(
-                package="m3t_ros2",
-                executable="m3t_image_publisher_node",
-                name="m3t_image_publisher",
-                output="screen",
-                parameters=[
-                    _parameter_file(object_data["config"]),
-                    _parameter_file(sequence_config),
-                    _parameter_file(config_file),
-                ],
-            )
-        )
-
-    actions.append(
-        Node(
+        synthetic_source_node = Node(
             package="m3t_ros2",
-            executable="m3t_tracker_node",
-            name="m3t_tracker_node",
+            executable="m3t_synthetic_source_node",
+            name="m3t_synthetic_source",
             output="screen",
             parameters=common_parameters(),
         )
-    )
-    actions.append(
-        Node(
-            package="rviz2",
-            executable="rviz2",
-            name="rviz2",
-            arguments=[
-                "-d",
-                os.path.join(package_share, "rviz", "m3t.rviz"),
+        source_nodes = [synthetic_source_node]
+    elif source_mode == "sequence":
+        image_publisher_node = Node(
+            package="m3t_ros2",
+            executable="m3t_image_publisher_node",
+            name="m3t_image_publisher",
+            output="screen",
+            parameters=[
+                _parameter_file(object_data["config"]),
+                _parameter_file(sequence_config),
+                _parameter_file(config_file),
             ],
-            condition=IfCondition(LaunchConfiguration("rviz")),
         )
+        source_nodes = [image_publisher_node]
+
+    tracker_node = Node(
+        package="m3t_ros2",
+        executable="m3t_tracker_node",
+        name="m3t_tracker_node",
+        output="screen",
+        parameters=common_parameters(),
     )
-    return actions
+    
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=[
+            "-d",
+            os.path.join(package_share, "rviz", "m3t.rviz"),
+        ],
+        condition=IfCondition(LaunchConfiguration("rviz")),
+    )
+
+    return (
+        [runtime_environment]
+        + resolved_configurations
+        + source_nodes
+        + [tracker_node, rviz_node]
+    )
 
 
 def generate_launch_description():
     package_share = get_package_share_directory("m3t_ros2")
+    config_default = os.path.join(package_share, "config", "m3t.yaml")
+    model_cache_default = PathJoinSubstitution(
+        ["auto_generated", "m3t", LaunchConfiguration("object")]
+    )
+
+    declared_arguments = [
+        DeclareLaunchArgument(
+            "source",
+            default_value="synthetic",
+            description="synthetic, sequence, or topics",
+        ),
+        DeclareLaunchArgument("object", default_value="box"),
+        DeclareLaunchArgument(
+            "object_config",
+            default_value="",
+            description="Custom ROS object-parameter YAML; overrides object",
+        ),
+        DeclareLaunchArgument(
+            "config_file",
+            default_value=config_default,
+            description="Main ROS parameter YAML",
+        ),
+        DeclareLaunchArgument("mesh_scale", default_value="1.0"),
+        DeclareLaunchArgument(
+            "modalities",
+            default_value="region,depth,texture",
+            description="Comma-separated combination of region, depth, and texture",
+        ),
+        DeclareLaunchArgument(
+            "model_cache_dir",
+            default_value=model_cache_default,
+            description="Writable per-object model cache",
+        ),
+        DeclareLaunchArgument(
+            "sequence_config",
+            default_value="",
+            description="ROS parameter YAML containing sequence metadata/GT",
+        ),
+        DeclareLaunchArgument(
+            "init_mode", default_value="gt", description="gt, tf, or static"
+        ),
+        DeclareLaunchArgument("source_rate", default_value="60.0"),
+        DeclareLaunchArgument("track_rate", default_value="0.0"),
+        DeclareLaunchArgument("publish_rate", default_value="60.0"),
+        DeclareLaunchArgument("log_period", default_value="2.0"),
+        DeclareLaunchArgument("event_driven", default_value="true"),
+        DeclareLaunchArgument(
+            "image_outputs",
+            default_value="overlay,keypoints",
+            description=(
+                "Tracker images: none, overlay, keypoints, or overlay,keypoints"
+            ),
+        ),
+        DeclareLaunchArgument("sync_tolerance", default_value="0.02"),
+        DeclareLaunchArgument("n_frames", default_value="240"),
+        DeclareLaunchArgument("loop", default_value="true"),
+        DeclareLaunchArgument("depth_noise", default_value="10.0"),
+        DeclareLaunchArgument("distortion", default_value="0.05"),
+        DeclareLaunchArgument("depth_scale", default_value="0.001"),
+        DeclareLaunchArgument(
+            "motion_mode",
+            default_value="six_dof_sine",
+            description="Synthetic motion: six_dof_sine, orbit, or static",
+        ),
+        DeclareLaunchArgument("spin_turns", default_value="1.0"),
+        DeclareLaunchArgument("nod_degrees", default_value="25.0"),
+        DeclareLaunchArgument("world_frame", default_value="camera"),
+        DeclareLaunchArgument("camera_frame", default_value="camera"),
+        DeclareLaunchArgument("gt_frame", default_value="object_gt"),
+        DeclareLaunchArgument(
+            "color_topic", default_value="/camera/color/image_raw"
+        ),
+        DeclareLaunchArgument(
+            "depth_topic", default_value="/camera/depth/image_raw"
+        ),
+        DeclareLaunchArgument(
+            "color_info_topic", default_value="/camera/color/camera_info"
+        ),
+        DeclareLaunchArgument(
+            "depth_info_topic", default_value="/camera/depth/camera_info"
+        ),
+        DeclareLaunchArgument("rviz", default_value="false"),
+    ]
+
     return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                "source",
-                default_value="synthetic",
-                description="synthetic, sequence, or topics",
-            ),
-            DeclareLaunchArgument("object", default_value="box"),
-            DeclareLaunchArgument(
-                "object_config",
-                default_value="",
-                description="Custom ROS object-parameter YAML; overrides object",
-            ),
-            DeclareLaunchArgument(
-                "config_file",
-                default_value=os.path.join(
-                    package_share, "config", "m3t.yaml"
-                ),
-                description="Main ROS parameter YAML",
-            ),
-            DeclareLaunchArgument("mesh_scale", default_value="1.0"),
-            DeclareLaunchArgument(
-                "modalities",
-                default_value="region,depth,texture",
-                description=(
-                    "Comma-separated combination of region, depth, and texture"
-                ),
-            ),
-            DeclareLaunchArgument(
-                "model_cache_dir",
-                default_value=PathJoinSubstitution(
-                    [
-                        "auto_generated",
-                        "m3t",
-                        LaunchConfiguration("object"),
-                    ]
-                ),
-                description="Writable per-object model cache",
-            ),
-            DeclareLaunchArgument(
-                "sequence_config",
-                default_value="",
-                description="ROS parameter YAML containing sequence metadata/GT",
-            ),
-            DeclareLaunchArgument(
-                "init_mode",
-                default_value="gt",
-                description="gt, tf, or static",
-            ),
-            DeclareLaunchArgument("source_rate", default_value="60.0"),
-            DeclareLaunchArgument("track_rate", default_value="0.0"),
-            DeclareLaunchArgument("publish_rate", default_value="60.0"),
-            DeclareLaunchArgument("log_period", default_value="2.0"),
-            DeclareLaunchArgument("event_driven", default_value="true"),
-            DeclareLaunchArgument(
-                "image_outputs",
-                default_value="overlay,keypoints",
-                description=(
-                    "Tracker images: none, overlay, keypoints, "
-                    "or overlay,keypoints"
-                ),
-            ),
-            DeclareLaunchArgument("sync_tolerance", default_value="0.02"),
-            DeclareLaunchArgument("n_frames", default_value="240"),
-            DeclareLaunchArgument("loop", default_value="true"),
-            DeclareLaunchArgument("depth_noise", default_value="10.0"),
-            DeclareLaunchArgument("distortion", default_value="0.05"),
-            DeclareLaunchArgument("depth_scale", default_value="0.001"),
-            DeclareLaunchArgument(
-                "motion_mode",
-                default_value="six_dof_sine",
-                description="Synthetic motion: six_dof_sine, orbit, or static",
-            ),
-            DeclareLaunchArgument("spin_turns", default_value="1.0"),
-            DeclareLaunchArgument("nod_degrees", default_value="25.0"),
-            DeclareLaunchArgument("world_frame", default_value="camera"),
-            DeclareLaunchArgument("camera_frame", default_value="camera"),
-            DeclareLaunchArgument("gt_frame", default_value="object_gt"),
-            DeclareLaunchArgument(
-                "color_topic", default_value="/camera/color/image_raw"
-            ),
-            DeclareLaunchArgument(
-                "depth_topic", default_value="/camera/depth/image_raw"
-            ),
-            DeclareLaunchArgument(
-                "color_info_topic",
-                default_value="/camera/color/camera_info",
-            ),
-            DeclareLaunchArgument(
-                "depth_info_topic",
-                default_value="/camera/depth/camera_info",
-            ),
-            DeclareLaunchArgument("rviz", default_value="false"),
+        declared_arguments
+        + [
             OpaqueFunction(function=launch_setup),
         ]
     )
