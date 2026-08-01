@@ -201,7 +201,6 @@ def launch_setup(context, *args, **kwargs):
             _parameter_file(config_file),
         ]
 
-    source_nodes = []
     if source_mode == "synthetic":
         synthetic_source_node = Node(
             package="m3t_ros2",
@@ -210,7 +209,7 @@ def launch_setup(context, *args, **kwargs):
             output="screen",
             parameters=common_parameters(),
         )
-        source_nodes = [synthetic_source_node]
+        source_node = synthetic_source_node
     elif source_mode == "sequence":
         image_publisher_node = Node(
             package="m3t_ros2",
@@ -223,7 +222,7 @@ def launch_setup(context, *args, **kwargs):
                 _parameter_file(config_file),
             ],
         )
-        source_nodes = [image_publisher_node]
+        source_node = image_publisher_node
 
     tracker_node = Node(
         package="m3t_ros2",
@@ -247,8 +246,7 @@ def launch_setup(context, *args, **kwargs):
     return (
         [runtime_environment]
         + resolved_configurations
-        + source_nodes
-        + [tracker_node, rviz_node]
+        + [source_node, tracker_node, rviz_node]
     )
 
 
