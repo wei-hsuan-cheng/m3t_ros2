@@ -25,7 +25,6 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     OpaqueFunction,
-    SetEnvironmentVariable,
     SetLaunchConfiguration,
 )
 from launch.conditions import IfCondition
@@ -56,21 +55,6 @@ def _read_ros_parameters(path, node_name):
     for key in (node_name, "/" + node_name):
         parameters.update(document.get(key, {}).get("ros__parameters", {}))
     return parameters
-
-
-def _xdg_runtime_dir():
-    configured = os.environ.get("XDG_RUNTIME_DIR")
-    if configured:
-        return configured
-    ros_home = os.environ.get(
-        "ROS_HOME", os.path.join(os.path.expanduser("~"), ".ros")
-    )
-    runtime_dir = os.path.join(
-        ros_home, "m3t", "runtime-" + str(os.getuid())
-    )
-    os.makedirs(runtime_dir, mode=0o700, exist_ok=True)
-    os.chmod(runtime_dir, 0o700)
-    return runtime_dir
 
 
 def _absolute_asset_path(path, config_path, parameter_name):
@@ -187,9 +171,6 @@ def launch_setup(context, *args, **kwargs):
         "resolved_publish_gt": init_mode == "gt",
     }
 
-    runtime_environment = SetEnvironmentVariable(
-        name="XDG_RUNTIME_DIR", value=_xdg_runtime_dir()
-    )
     resolved_configurations = [
         SetLaunchConfiguration(name, _launch_value(value))
         for name, value in resolved_values.items()
@@ -244,9 +225,12 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return (
-        [runtime_environment]
-        + resolved_configurations
-        + [source_node, tracker_node, rviz_node]
+        resolved_configurations
+        + [
+           source_node, 
+           tracker_node, 
+           rviz_node,
+          ]
     )
 
 
