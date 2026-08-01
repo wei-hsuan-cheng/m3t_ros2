@@ -27,7 +27,7 @@
 m3t_tracker_node:
   ros__parameters:
     modalities: "$(var modalities)"
-    track_rate: $(var track_rate)
+    track_rate: 0.0
     publish_rate: $(var publish_rate)
     log_period: 2.0
     event_driven: true

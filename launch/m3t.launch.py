@@ -261,11 +261,19 @@ def generate_launch_description():
 
     declared_arguments = [
         DeclareLaunchArgument(
+            "object", 
+            default_value="box"
+        ),
+        DeclareLaunchArgument(
+            "modalities",
+            default_value="region,depth,texture",
+            description="Comma-separated combination of region, depth, and texture",
+        ),
+        DeclareLaunchArgument(
             "source",
             default_value="synthetic",
             description="synthetic, sequence, or topics",
         ),
-        DeclareLaunchArgument("object", default_value="box"),
         DeclareLaunchArgument(
             "object_config",
             default_value="",
@@ -275,11 +283,6 @@ def generate_launch_description():
             "config_file",
             default_value=config_default,
             description="Main ROS parameter YAML",
-        ),
-        DeclareLaunchArgument(
-            "modalities",
-            default_value="region,depth,texture",
-            description="Comma-separated combination of region, depth, and texture",
         ),
         DeclareLaunchArgument(
             "model_cache_dir",
@@ -294,8 +297,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "init_mode", default_value="gt", description="gt, tf, or static"
         ),
+        DeclareLaunchArgument(
+            "motion_mode",
+            default_value="six_dof_sine",
+            description="Synthetic motion: six_dof_sine, orbit, or static",
+        ),
         DeclareLaunchArgument("source_rate", default_value="60.0"),
-        DeclareLaunchArgument("track_rate", default_value="0.0"),
         DeclareLaunchArgument("publish_rate", default_value="60.0"),
         DeclareLaunchArgument(
             "image_outputs",
@@ -305,21 +312,20 @@ def generate_launch_description():
             ),
         ),
         DeclareLaunchArgument(
-            "motion_mode",
-            default_value="six_dof_sine",
-            description="Synthetic motion: six_dof_sine, orbit, or static",
+            "color_topic", 
+            default_value="/camera/color/image_raw"
         ),
         DeclareLaunchArgument(
-            "color_topic", default_value="/camera/color/image_raw"
+            "depth_topic", 
+            default_value="/camera/depth/image_raw"
         ),
         DeclareLaunchArgument(
-            "depth_topic", default_value="/camera/depth/image_raw"
+            "color_info_topic", 
+            default_value="/camera/color/camera_info"
         ),
         DeclareLaunchArgument(
-            "color_info_topic", default_value="/camera/color/camera_info"
-        ),
-        DeclareLaunchArgument(
-            "depth_info_topic", default_value="/camera/depth/camera_info"
+            "depth_info_topic", 
+            default_value="/camera/depth/camera_info"
         ),
         DeclareLaunchArgument("rviz", default_value="false"),
     ]
