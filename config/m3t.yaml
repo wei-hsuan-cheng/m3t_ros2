@@ -1,5 +1,3 @@
-# Single common configuration loaded last by m3t.launch.py. Launch arguments
-# are substituted through ParameterFile(..., allow_substs=True).
 /**:
   ros__parameters:
     # File paths
@@ -85,8 +83,9 @@ m3t_synthetic_source:
     spin_turns: 1.0
     nod_degrees: 25.0
 
-    camera_intrinsics: 
-      [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
+    camera_intrinsics: [
+      698.128, 698.617, 478.459, 274.426, 960.0, 540.0
+    ]
 
 m3t_image_publisher:
   ros__parameters:

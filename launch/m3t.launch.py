@@ -1,21 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Unified ROS 2 launch interface for M3T.
-
-Examples:
-  ros2 launch m3t_ros2 m3t.launch.py \
-    object:=006_mustard_bottle \
-    modalities:=region,depth,texture
-
-  ros2 launch m3t_ros2 m3t.launch.py \
-    source:=sequence sequence_config:=/data/box/sequence.yaml \
-    object:=box \
-    modalities:=region,depth
-
-  ros2 launch m3t_ros2 m3t.launch.py \
-    source:=topics \
-    object_config:=/data/object/object.yaml \
-    init_mode:=tf
-"""
+"""Unified ROS 2 launch interface for M3T."""
 
 import os
 
