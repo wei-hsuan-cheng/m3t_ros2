@@ -2,14 +2,21 @@
 # are substituted through ParameterFile(..., allow_substs=True).
 /**:
   ros__parameters:
+    # File paths
     geometry_path: "$(var resolved_geometry_path)"
     texture_path: "$(var resolved_texture_path)"
     mesh_resource: "$(var resolved_mesh_resource)"
+    
+    # Scales
     mesh_scale: $(var mesh_scale)
     depth_scale: $(var depth_scale)
+    
+    # Frames
     world_frame: camera
     camera_frame: camera
     gt_frame: object_gt
+    
+    # Topics
     gt_pose_topic: /m3t/pose_gt
     gt_marker_topic: /m3t/marker_gt
     color_topic: "$(var color_topic)"
@@ -31,8 +38,7 @@ m3t_tracker_node:
     convergence_translation_threshold: 0.0001
     convergence_rotation_threshold_deg: 0.05
     convergence_required_rounds: 5
-    # Tracker remains at normal nice=0; publisher is deliberately lower.
-    publisher_thread_nice: 5
+    publisher_thread_nice: 5 # Tracker remains at normal nice=0; publisher is deliberately lower.
     image_outputs: "$(var image_outputs)"
     sync_tolerance: $(var sync_tolerance)
     lost_threshold: 0.05
@@ -79,7 +85,8 @@ m3t_synthetic_source:
     spin_turns: 1.0
     nod_degrees: 25.0
 
-    camera_intrinsics: [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
+    camera_intrinsics: 
+      [698.128, 698.617, 478.459, 274.426, 960.0, 540.0]
 
 m3t_image_publisher:
   ros__parameters:
