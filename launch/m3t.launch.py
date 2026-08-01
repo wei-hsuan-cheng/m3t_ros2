@@ -276,8 +276,7 @@ def generate_launch_description():
             default_value=config_default,
             description="Main ROS parameter YAML",
         ),
-        DeclareLaunchArgument("mesh_scale", default_value="1.0"),
-        DeclareLaunchArgument("depth_scale", default_value="0.001"),DeclareLaunchArgument(
+        DeclareLaunchArgument(
             "modalities",
             default_value="region,depth,texture",
             description="Comma-separated combination of region, depth, and texture",
@@ -305,7 +304,6 @@ def generate_launch_description():
                 "Tracker images: none, overlay, keypoints, or overlay,keypoints"
             ),
         ),
-        DeclareLaunchArgument("sync_tolerance", default_value="0.02"),
         DeclareLaunchArgument(
             "motion_mode",
             default_value="six_dof_sine",

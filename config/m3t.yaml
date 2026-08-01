@@ -8,8 +8,8 @@
     mesh_resource: "$(var resolved_mesh_resource)"
     
     # Scales
-    mesh_scale: $(var mesh_scale)
-    depth_scale: $(var depth_scale)
+    mesh_scale: 1.0
+    depth_scale: 0.001
     
     # Frames
     world_frame: camera
@@ -40,7 +40,7 @@ m3t_tracker_node:
     convergence_required_rounds: 5
     publisher_thread_nice: 5 # Tracker remains at normal nice=0; publisher is deliberately lower.
     image_outputs: "$(var image_outputs)"
-    sync_tolerance: $(var sync_tolerance)
+    sync_tolerance: 0.02
     lost_threshold: 0.05
     lost_rotation_threshold: 45.0
     use_gt_initial_pose: $(var resolved_use_gt_initial_pose)
