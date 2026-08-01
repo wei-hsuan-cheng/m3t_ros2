@@ -419,8 +419,8 @@ def generate_launch_description():
             DeclareLaunchArgument("sync_tolerance", default_value="0.02"),
             DeclareLaunchArgument("n_frames", default_value="240"),
             DeclareLaunchArgument("loop", default_value="true"),
-            DeclareLaunchArgument("depth_noise", default_value="0.0"),
-            DeclareLaunchArgument("distortion", default_value="0.0"),
+            DeclareLaunchArgument("depth_noise", default_value="10.0"),
+            DeclareLaunchArgument("distortion", default_value="0.05"),
             DeclareLaunchArgument("depth_scale", default_value="0.001"),
             DeclareLaunchArgument(
                 "motion_mode",
