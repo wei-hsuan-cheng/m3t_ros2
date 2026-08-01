@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
-    object_name: master_chef_can
-    geometry_path: "../../../assets/ycb/master_chef_can/model.obj"
-    texture_path: "../../../assets/ycb/master_chef_can/texture_map.png"
+    object_name: 002_master_chef_can
+    geometry_path: "../../../assets/ycb/002_master_chef_can/model.obj"
+    texture_path: "../../../assets/ycb/002_master_chef_can/texture_map.png"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
@@ -13,8 +13,8 @@
       0.0, 0.0, 1.0, 0.0,
       0.0, 0.0, 0.0, 1.0
     ]
-    body_id: 3
-    region_id: 3
+    body_id: 2
+    region_id: 2
     # [x, y, z, roll, pitch, yaw], with angles in radians.
     initial_pose: [0.0, 0.0, 0.5, 1.5708, 0.0, 0.0]
     gt_initial_pose: [0.0, 0.0, 0.5, 1.5708, 0.0, 0.0]

@@ -3,7 +3,7 @@
 
 Examples:
   ros2 launch m3t_ros2 m3t.launch.py \
-    object:=mustard \
+    object:=006_mustard_bottle \
     modalities:=region,depth,texture
 
   ros2 launch m3t_ros2 m3t.launch.py \
@@ -38,9 +38,9 @@ BUILTIN_OBJECTS = {
     "triangle": os.path.join("primitives", "triangle.yaml"),
     "box": os.path.join("primitives", "box.yaml"),
     "cylinder": os.path.join("primitives", "cylinder.yaml"),
-    "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
-    "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
-    "mustard": os.path.join("ycb", "mustard.yaml"),
+    "002_master_chef_can": os.path.join("ycb", "002_master_chef_can.yaml"),
+    "003_cracker_box": os.path.join("ycb", "003_cracker_box.yaml"),
+    "006_mustard_bottle": os.path.join("ycb", "006_mustard_bottle.yaml"),
 }
 
 

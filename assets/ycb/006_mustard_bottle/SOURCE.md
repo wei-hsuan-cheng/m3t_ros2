@@ -1,4 +1,4 @@
-# YCB mustard bottle mesh
+# YCB 006_mustard_bottle mesh
 
 `model.obj`, `textured.mtl`, and `texture_map.png` are the Google 16k textured model for YCB object `006_mustard_bottle`, downloaded from `https://ycb-benchmarks.s3.amazonaws.com/data/google/006_mustard_bottle_google_16k.tgz`.
 

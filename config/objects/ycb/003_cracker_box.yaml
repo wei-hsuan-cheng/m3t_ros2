@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
-    object_name: mustard
-    geometry_path: "../../../assets/ycb/mustard/model.obj"
-    texture_path: "../../../assets/ycb/mustard/texture_map.png"
+    object_name: 003_cracker_box
+    geometry_path: "../../../assets/ycb/003_cracker_box/model.obj"
+    texture_path: "../../../assets/ycb/003_cracker_box/texture_map.png"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
@@ -13,9 +13,9 @@
       0.0, 0.0, 1.0, 0.0,
       0.0, 0.0, 0.0, 1.0
     ]
-    body_id: 6
-    region_id: 6
+    body_id: 3
+    region_id: 3
     # [x, y, z, roll, pitch, yaw], with angles in radians.
-    initial_pose: [0.015339, 0.088048545, 0.55300295, 1.5708, 0.0, 0.0]
-    gt_initial_pose: [0.015339, 0.088048545, 0.55300295, 1.5708, 0.0, 0.0]
+    initial_pose: [0.015, 0.0, 0.5, 0.0, 1.5708, 0.0]
+    gt_initial_pose: [0.015, 0.0, 0.5, 0.0, 1.5708, 0.0]
     translation_amplitude: [0.096825068, 0.064550045, 0.064550045]

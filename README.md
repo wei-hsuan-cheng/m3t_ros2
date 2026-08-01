@@ -12,7 +12,7 @@ camera/image publisher                       m3t_tracker_node
   depth CameraInfo ------------------------> depth intrinsics
 ```
 
-- Built-in objects: `triangle`, `box`, `cylinder`, `mustard`, `cracker_box`, etc.
+- Built-in objects: `triangle`, `box`, `cylinder`, `002_master_chef_can`, `003_cracker_box`, and `006_mustard_bottle`.
 - Supported modalities: combination of `region`, `depth`, and `texture`.
 
 The tracker never reads camera intrinsics from an object or tracker config. It waits until the external camera has published both `Image` and `CameraInfo` before it initializes M3T.
@@ -42,10 +42,10 @@ colcon build --symlink-install \
 ```text
 m3t_ros2/
   assets/primitives/<object>/        primitive mesh assets
-  assets/ycb/<object>/               YCB mesh, material, and texture assets
+  assets/ycb/<ycb_object_id>/        YCB mesh, material, and texture assets
   config/m3t.yaml                    common parameters and launch substitutions
   config/objects/primitives/<object>.yaml  primitive object parameters
-  config/objects/ycb/<object>.yaml   YCB object parameters
+  config/objects/ycb/<ycb_object_id>.yaml  YCB object parameters
   launch/m3t.launch.py               one launch interface
 ```
 
@@ -55,8 +55,9 @@ The launch file loads the selected object YAML, optional sequence YAML, and then
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic object:=mustard rviz:=true
-# object:=box | triangle | cylinder | mustard | cracker_box |etc.
+  source:=synthetic object:=006_mustard_bottle rviz:=true
+# object:=box | triangle | cylinder | 002_master_chef_can |
+#         003_cracker_box | 006_mustard_bottle
 ```
 
 Per-frame refinement is configured under `m3t_tracker_node.ros__parameters` in `config/m3t.yaml`. The tracker runs at least `min_corr_iterations` and at most `max_corr_iterations`, with `n_update_iterations` pose updates per correspondence round. It stops early after both pose-change thresholds remain satisfied for `convergence_required_rounds` consecutive rounds. Set `adaptive_iterations: false` to always run `max_corr_iterations`.
@@ -132,7 +133,7 @@ chmod +x download_ycb_obj.sh
   006_mustard_bottle
 ```
 
-The script downloads each object into `assets/ycb/<object>/` and creates its parameter file at `config/objects/ycb/<object>.yaml`.
+The script preserves the official ID-prefixed YCB name, downloads each object into `assets/ycb/<ycb_object_id>/`, and creates `config/objects/ycb/<ycb_object_id>.yaml`.
 
 ### 1. Prepare the mesh
 
@@ -269,9 +270,9 @@ BUILTIN_OBJECTS = {
     "triangle": os.path.join("primitives", "triangle.yaml"),
     "box": os.path.join("primitives", "box.yaml"),
     "cylinder": os.path.join("primitives", "cylinder.yaml"),
-    "master_chef_can": os.path.join("ycb", "master_chef_can.yaml"),
-    "cracker_box": os.path.join("ycb", "cracker_box.yaml"),
-    "mustard": os.path.join("ycb", "mustard.yaml"),
+    "002_master_chef_can": os.path.join("ycb", "002_master_chef_can.yaml"),
+    "003_cracker_box": os.path.join("ycb", "003_cracker_box.yaml"),
+    "006_mustard_bottle": os.path.join("ycb", "006_mustard_bottle.yaml"),
     "my_object": os.path.join("custom", "my_object.yaml"),
 }
 ```

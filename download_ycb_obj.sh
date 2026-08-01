@@ -18,8 +18,8 @@
 #     005_tomato_soup_can \
 #     006_mustard_bottle
 #
-# The local object name is derived by removing the leading three-digit YCB ID
-# and underscore. For example, 006_mustard_bottle becomes mustard_bottle.
+# The official ID-prefixed YCB name is preserved for the asset directory,
+# object config, and ROS object_name.
 
 set -euo pipefail
 
@@ -72,11 +72,10 @@ trap cleanup EXIT
 
 download_object() {
   local ycb_object_id="$1"
-  local asset_name="${ycb_object_id#???_}"
-  local object_label="${asset_name//_/ }"
-  local object_dir="assets/ycb/${asset_name}"
+  local object_name="${ycb_object_id}"
+  local object_dir="assets/ycb/${object_name}"
   local config_dir="config/objects/ycb"
-  local config_path="${config_dir}/${asset_name}.yaml"
+  local config_path="${config_dir}/${object_name}.yaml"
   local source_url="https://ycb-benchmarks.s3.amazonaws.com/data/google/${ycb_object_id}_google_16k.tgz"
   local temp_dir="${temp_root}/${ycb_object_id}"
   local archive_path="${temp_dir}/${ycb_object_id}_google_16k.tgz"
@@ -115,7 +114,7 @@ download_object() {
   texture_sha="$(sha256sum "${object_dir}/texture_map.png" | awk '{print $1}')"
 
   cat > "${object_dir}/SOURCE.md" <<EOF
-# YCB ${object_label} mesh
+# YCB ${object_name} mesh
 
 \`model.obj\`, \`textured.mtl\`, and \`texture_map.png\` are the Google 16k textured model for YCB object \`${ycb_object_id}\`, downloaded from \`${source_url}\`.
 
@@ -131,9 +130,9 @@ EOF
   cat > "${config_path}" <<EOF
 /**:
   ros__parameters:
-    object_name: ${asset_name}
-    geometry_path: "../../../assets/ycb/${asset_name}/model.obj"
-    texture_path: "../../../assets/ycb/${asset_name}/texture_map.png"
+    object_name: ${object_name}
+    geometry_path: "../../../assets/ycb/${object_name}/model.obj"
+    texture_path: "../../../assets/ycb/${object_name}/texture_map.png"
     mesh_use_embedded_materials: true
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true

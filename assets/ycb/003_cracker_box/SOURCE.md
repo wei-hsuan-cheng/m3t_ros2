@@ -1,4 +1,4 @@
-# YCB cracker box mesh
+# YCB 003_cracker_box mesh
 
 `model.obj`, `textured.mtl`, and `texture_map.png` are the Google 16k textured model for YCB object `003_cracker_box`, downloaded from `https://ycb-benchmarks.s3.amazonaws.com/data/google/003_cracker_box_google_16k.tgz`.
 

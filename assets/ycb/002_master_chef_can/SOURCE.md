@@ -1,4 +1,4 @@
-# YCB master chef can mesh
+# YCB 002_master_chef_can mesh
 
 `model.obj`, `textured.mtl`, and `texture_map.png` are the Google 16k textured model for YCB object `002_master_chef_can`, downloaded from `https://ycb-benchmarks.s3.amazonaws.com/data/google/002_master_chef_can_google_16k.tgz`.
 
