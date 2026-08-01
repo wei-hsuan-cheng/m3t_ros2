@@ -28,7 +28,7 @@ m3t_tracker_node:
   ros__parameters:
     modalities: "$(var modalities)"
     track_rate: 0.0
-    publish_rate: $(var publish_rate)
+    publish_rate: 60.0
     log_period: 2.0
     event_driven: true
     adaptive_iterations: true
@@ -48,7 +48,7 @@ m3t_tracker_node:
 
 m3t_synthetic_source:
   ros__parameters:
-    publish_rate: $(var source_rate)
+    publish_rate: 60.0
     gt_publish_rate: 60.0
     n_frames: 240
     depth_noise: 10.0
@@ -90,6 +90,6 @@ m3t_synthetic_source:
 
 m3t_image_publisher:
   ros__parameters:
-    publish_rate: $(var source_rate)
+    publish_rate: 60.0
     gt_publish_rate: 60.0
     publish_gt: $(var resolved_publish_gt)

@@ -302,8 +302,6 @@ def generate_launch_description():
             default_value="six_dof_sine",
             description="Synthetic motion: six_dof_sine, orbit, or static",
         ),
-        DeclareLaunchArgument("source_rate", default_value="60.0"),
-        DeclareLaunchArgument("publish_rate", default_value="60.0"),
         DeclareLaunchArgument(
             "image_outputs",
             default_value="overlay,keypoints",
