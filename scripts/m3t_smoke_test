@@ -5,18 +5,74 @@ set -euo pipefail
 #
 #   ros2 run m3t_ros2 m3t_smoke_test synthetic
 #   ros2 run m3t_ros2 m3t_smoke_test external-camera
+#   ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real
+#   ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
+#     --rviz --image-outputs overlay,keypoints
 #
 # The second mode launches the tracker with source:=topics, proves that it does
 # not initialize without CameraInfo, then starts a separate synthetic camera
 # process and waits for a TRACKED result.
 
 mode="${1:-synthetic}"
+if (( $# > 0 )); then
+  shift
+fi
 object="${M3T_SMOKE_OBJECT:-box}"
 modalities="${M3T_SMOKE_MODALITIES:-region,depth}"
 init_mode="${M3T_SMOKE_INIT_MODE:-gt}"
+rviz="${M3T_SMOKE_RVIZ:-false}"
+image_outputs="${M3T_SMOKE_IMAGE_OUTPUTS:-none}"
+keep_running="${M3T_SMOKE_KEEP_RUNNING:-false}"
 timeout_seconds="${M3T_SMOKE_TIMEOUT:-75}"
 log_root="${M3T_SMOKE_LOG_DIR:-${ROS_HOME:-${HOME}/.ros}/m3t/smoke_logs}"
 cache_dir="${M3T_MODEL_CACHE_DIR:-${PWD}/auto_generated/m3t/${object}}"
+
+usage() {
+  echo "usage: ros2 run m3t_ros2 m3t_smoke_test {synthetic|external-camera|fast-ycb-real} [--rviz] [--image-outputs {none|overlay|keypoints|overlay,keypoints}] [--keep-running]" >&2
+}
+
+while (( $# > 0 )); do
+  case "$1" in
+    --rviz)
+      rviz=true
+      keep_running=true
+      shift
+      ;;
+    --image-outputs)
+      if (( $# < 2 )); then
+        usage
+        exit 2
+      fi
+      image_outputs="$2"
+      shift 2
+      ;;
+    --image-outputs=*)
+      image_outputs="${1#*=}"
+      shift
+      ;;
+    --keep-running)
+      keep_running=true
+      shift
+      ;;
+    *)
+      usage
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "${rviz}" != "true" && "${rviz}" != "false" ]]; then
+  echo "M3T_SMOKE_RVIZ must be true or false" >&2
+  exit 2
+fi
+case "${image_outputs}" in
+  none|overlay|keypoints|overlay,keypoints|keypoints,overlay) ;;
+  *)
+    echo "invalid image outputs: ${image_outputs}" >&2
+    usage
+    exit 2
+    ;;
+esac
 mkdir -p "${log_root}" "${cache_dir}"
 
 # Keep the smoke test isolated from cameras and stale discovery data on the
@@ -78,6 +134,9 @@ wait_for_pattern() {
   local description="$4"
   local start_time="${SECONDS}"
   while (( SECONDS - start_time < timeout_seconds )); do
+    if grep -qE '^\[ERROR\].*process has died' "${log_file}" 2>/dev/null; then
+      fail_with_log "${description}: a launched node crashed" "${log_file}"
+    fi
     if grep -qE "${pattern}" "${log_file}" 2>/dev/null; then
       return 0
     fi
@@ -89,6 +148,13 @@ wait_for_pattern() {
   fail_with_log "${description}: timed out after ${timeout_seconds}s" "${log_file}"
 }
 
+wait_for_interactive_exit() {
+  if [[ "${keep_running}" == "true" ]]; then
+    echo "Interactive mode is running; press Ctrl-C to stop."
+    wait "${tracker_pid}" || true
+  fi
+}
+
 run_tracker_launch() {
   local source_mode="$1"
   local tracker_log="$2"
@@ -98,7 +164,8 @@ run_tracker_launch() {
     modalities:="${modalities}" \
     init_mode:="${init_mode}" \
     model_cache_dir:="${cache_dir}" \
-    rviz:=false \
+    image_outputs:="${image_outputs}" \
+    rviz:="${rviz}" \
     log_period:=1.0 \
     >"${tracker_log}" 2>&1 &
   tracker_pid="$!"
@@ -114,6 +181,7 @@ case "${mode}" in
       "synthetic tracker did not reach TRACKED"
     echo "PASS: synthetic ${object} (${modalities}) reached TRACKED"
     echo "Log: ${tracker_log}"
+    wait_for_interactive_exit
     ;;
 
   external-camera)
@@ -125,7 +193,7 @@ case "${mode}" in
     echo "Launching tracker only (source:=topics)..."
     run_tracker_launch topics "${tracker_log}"
     wait_for_pattern "${tracker_pid}" \
-      "waiting for RGB image \\+ CameraInfo" "${tracker_log}" \
+      "waiting for synchronized RGB-D camera data" "${tracker_log}" \
       "tracker did not enter its CameraInfo wait state"
     sleep 2
     if grep -q "got first frames" "${tracker_log}"; then
@@ -174,10 +242,63 @@ case "${mode}" in
     echo "PASS: external camera supplied CameraInfo and tracking reached TRACKED"
     echo "Tracker log: ${tracker_log}"
     echo "Camera log:  ${source_log}"
+    wait_for_interactive_exit
+    ;;
+
+  fast-ycb-real)
+    tracker_log="${log_root}/fast_ycb_006_mustard_bottle_real.log"
+    : >"${tracker_log}"
+    dataset_dir="${M3T_FAST_YCB_DIR:-/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real}"
+    missing_frame=""
+    for frame_index in $(seq 0 774); do
+      if [[ ! -f "${dataset_dir}/rgb/${frame_index}.png" ||
+            ! -f "${dataset_dir}/depth/${frame_index}.float" ]]; then
+        missing_frame="${frame_index}"
+        break
+      fi
+    done
+    if [[ -n "${missing_frame}" ]]; then
+      fail_with_log \
+        "FAST-YCB real mustard is incomplete: missing RGB-D frame ${missing_frame} in ${dataset_dir}" \
+        "${tracker_log}"
+    fi
+
+    package_prefix="$(ros2 pkg prefix m3t_ros2)"
+    sequence_config="${package_prefix}/share/m3t_ros2/config/sequences/fast_ycb/006_mustard_bottle_real.yaml"
+    echo "Launching complete FAST-YCB real-mustard smoke test..."
+    setsid ros2 launch m3t_ros2 m3t.launch.py \
+      source:=sequence \
+      sequence_config:="${sequence_config}" \
+      sequence_dir:="${dataset_dir}" \
+      object:=006_mustard_bottle \
+      modalities:=region,depth,texture \
+      init_mode:=static \
+      image_outputs:="${image_outputs}" \
+      rviz:="${rviz}" \
+      >"${tracker_log}" 2>&1 &
+    tracker_pid="$!"
+
+    wait_for_pattern "${tracker_pid}" "depth=fast_ycb_float" \
+      "${tracker_log}" "FAST-YCB source did not accept float depth"
+    wait_for_pattern "${tracker_pid}" "got first frames" \
+      "${tracker_log}" "tracker did not receive FAST-YCB RGB-D frames"
+    wait_for_pattern "${tracker_pid}" "no-GT" "${tracker_log}" \
+      "tracker did not complete a no-GT tracking window"
+    wait_for_pattern "${tracker_pid}" "sequence complete" "${tracker_log}" \
+      "FAST-YCB source did not publish all 775 frames"
+    sleep 2
+    if grep -qE '^\[ERROR\].*process has died' "${tracker_log}" ||
+       ! kill -0 "${tracker_pid}" 2>/dev/null; then
+      fail_with_log "FAST-YCB pipeline was not stable after tracking started" \
+        "${tracker_log}"
+    fi
+    echo "PASS: FAST-YCB real mustard completed all 775 RGB-D frames"
+    echo "Log: ${tracker_log}"
+    wait_for_interactive_exit
     ;;
 
   *)
-    echo "usage: ros2 run m3t_ros2 m3t_smoke_test {synthetic|external-camera}" >&2
+    usage
     exit 2
     ;;
 esac
