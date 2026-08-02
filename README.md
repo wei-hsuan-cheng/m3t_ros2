@@ -297,40 +297,7 @@ rotation_symmetries: [
 ```
 
 
-### 3. Test it without changing launch code
-
-An external object YAML supplies the object parameters, so no C++ or launch-file modification is required. Set `object` to the object name as well so the default model-cache directory is named correctly:
-
-```bash
-ros2 launch m3t_ros2 m3t.launch.py \
-  object:=my_object \
-  object_config:=/absolute/path/to/my_object.yaml \
-  modalities:=region,depth,texture \
-  source:=synthetic \
-  init_mode:=gt \
-  rviz:=true
-```
-
-For a real camera:
-
-```bash
-ros2 launch m3t_ros2 m3t.launch.py \
-  object:=my_object \
-  object_config:=/absolute/path/to/my_object.yaml \
-  modalities:=region,depth,texture \
-  source:=topics \
-  init_mode:=static \
-  color_topic:=/camera/color/image_raw \
-  color_info_topic:=/camera/color/camera_info \
-  depth_topic:=/camera/depth/image_raw \
-  depth_info_topic:=/camera/depth/camera_info \
-  rviz:=true
-```
-
-Use `init_mode:=tf` instead of `static` when another node provides `world_frame -> gt_frame`.
-
-
-### 4. Optionally register it as a built-in object
+### 3. Optionally register it as a built-in object
 
 To launch the object with `object:=my_object`, add it to `BUILTIN_OBJECTS` in `launch/m3t.launch.py`. Then rebuild and source the workspace.
 
@@ -346,7 +313,7 @@ BUILTIN_OBJECTS = {
 }
 ```
 
-Then launch:
+### 4. Launch custom object example
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
@@ -356,46 +323,6 @@ ros2 launch m3t_ros2 m3t.launch.py \
   init_mode:=gt \
   rviz:=true
 ```
-
-
-### 5. Generated tracking models
-
-The region and depth modalities automatically generate their view models on the first run:
-
-```text
-auto_generated/m3t/my_object/
-  region_model.bin
-  depth_model.bin
-```
-
-The first startup can therefore take longer. These files are generated caches, not source assets.
-
-If the mesh scale, geometry, body-frame transform, or winding settings change, use a new `model_cache_dir` or remove only that object's old cache before running again:
-
-```bash
-ros2 launch m3t_ros2 m3t.launch.py \
-  object:=my_object \
-  source:=synthetic \
-  model_cache_dir:=auto_generated/m3t/my_object_v2 \
-  rviz:=true
-```
-
-The cache directory must be writable.
-
-
-### 6. Verify the loaded parameters
-
-After launching, confirm that ROS loaded the intended mesh and poses:
-
-```bash
-ros2 param get /m3t_tracker_node geometry_path
-ros2 param get /m3t_tracker_node initial_pose
-
-# For source:=synthetic:
-ros2 param get /m3t_synthetic_source gt_initial_pose
-```
-
-If an edited YAML appears to have no effect, confirm that the launch uses the intended `object_config`. For a built-in object, rebuild and source `install/setup.bash` so the installed package contains the new YAML and assets.
 
 
 ## Contact
