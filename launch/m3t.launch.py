@@ -165,6 +165,16 @@ def launch_setup(context):
             _parameter_file(config_file),
         ]
 
+    def tracker_parameters():
+        parameters = [
+            _parameter_file(object_data["config"]),
+            _parameter_file(config_file),
+        ]
+        if source_mode == "sequence":
+            parameters.append(_parameter_file(sequence_config))
+        return parameters
+
+    source_nodes = []
     if source_mode == "synthetic":
         synthetic_source_node = Node(
             package="m3t_ros2",
@@ -173,7 +183,7 @@ def launch_setup(context):
             output="screen",
             parameters=common_parameters(),
         )
-        source_node = synthetic_source_node
+        source_nodes = [synthetic_source_node]
     elif source_mode == "sequence":
         image_publisher_node = Node(
             package="m3t_ros2",
@@ -182,18 +192,18 @@ def launch_setup(context):
             output="screen",
             parameters=[
                 _parameter_file(object_data["config"]),
-                _parameter_file(sequence_config),
                 _parameter_file(config_file),
+                _parameter_file(sequence_config),
             ],
         )
-        source_node = image_publisher_node
+        source_nodes = [image_publisher_node]
 
     tracker_node = Node(
         package="m3t_ros2",
         executable="m3t_tracker_node",
         name="m3t_tracker_node",
         output="screen",
-        parameters=common_parameters(),
+        parameters=tracker_parameters(),
     )
     
     rviz_node = Node(
@@ -207,14 +217,7 @@ def launch_setup(context):
         condition=IfCondition(LaunchConfiguration("rviz")),
     )
 
-    return (
-        resolved_configurations
-        + [
-           source_node, 
-           tracker_node, 
-           rviz_node,
-          ]
-    )
+    return resolved_configurations + source_nodes + [tracker_node, rviz_node]
 
 
 def generate_launch_description():
@@ -258,6 +261,11 @@ def generate_launch_description():
             "sequence_config",
             default_value="",
             description="ROS parameter YAML containing sequence metadata/GT",
+        ),
+        DeclareLaunchArgument(
+            "sequence_dir",
+            default_value="",
+            description="Sequence root used by substitution-enabled sequence YAML",
         ),
         DeclareLaunchArgument(
             "init_mode", default_value="gt", description="gt, tf, or static"

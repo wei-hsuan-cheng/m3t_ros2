@@ -15,6 +15,7 @@
 #include <geometry_msgs/msg/transform.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
 #include <algorithm>
@@ -305,6 +306,8 @@ class M3TTrackerNode final : public rclcpp::Node {
         "color_info_topic", "/camera/color/camera_info");
     depth_info_topic_ = declare_parameter<std::string>(
         "depth_info_topic", "/camera/depth/camera_info");
+    tracker_ready_topic_ = declare_parameter<std::string>(
+        "tracker_ready_topic", "/m3t/tracker_ready");
     gt_frame_ = declare_parameter<std::string>("gt_frame", "object_gt");
     lost_threshold_ =
         declare_parameter<double>("lost_threshold", 0.05);
@@ -364,6 +367,22 @@ class M3TTrackerNode final : public rclcpp::Node {
     publisher_config_.publish_color = false;
     publisher_config_.publish_depth = false;
     publisher_config_.publish_gt = false;
+
+    if (use_gt_initial_pose_) {
+      RCLCPP_INFO(
+          get_logger(),
+          "detector initialization: one-time TF %s -> %s",
+          publisher_config_.world_frame.c_str(), gt_frame_.c_str());
+    } else {
+      const Eigen::Quaternionf quaternion{initial_pose_.rotation()};
+      RCLCPP_INFO(
+          get_logger(),
+          "detector initialization: one-time static body-to-%s pose "
+          "xyz=[%.6f %.6f %.6f] qxyzw=[%.6f %.6f %.6f %.6f]",
+          publisher_config_.world_frame.c_str(), initial_pose_.translation().x(),
+          initial_pose_.translation().y(), initial_pose_.translation().z(),
+          quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w());
+    }
   }
 
   void CreateTrackingGraph() {
@@ -490,6 +509,10 @@ class M3TTrackerNode final : public rclcpp::Node {
           response->success = true;
           response->message = "re-detect queued";
         });
+    const auto ready_qos =
+        rclcpp::QoS{rclcpp::KeepLast{1}}.reliable().transient_local();
+    tracker_ready_publisher_ =
+        create_publisher<std_msgs::msg::Bool>(tracker_ready_topic_, ready_qos);
 
     ros_publisher_ = std::make_unique<m3t_ros2::RosPublisher>(
         this, publisher_config_, body_);
@@ -775,6 +798,9 @@ class M3TTrackerNode final : public rclcpp::Node {
       detector_->set_link2world_pose(detector_initial_pose_);
     }
     tracker_->ExecuteDetection(false);
+    std_msgs::msg::Bool ready_message;
+    ready_message.data = true;
+    tracker_ready_publisher_->publish(ready_message);
 
     RCLCPP_INFO(
         get_logger(),
@@ -809,7 +835,7 @@ class M3TTrackerNode final : public rclcpp::Node {
     const dsec track_period{
         track_rate_ > 0.0 ? 1.0 / track_rate_ : 0.0};
     const dsec snapshot_period{1.0 / publish_rate_};
-    uint64_t last_sequence = 0;
+    uint64_t last_sequence = color_camera_->seq();
 
     for (int iteration = 0;
          running_.load(std::memory_order_acquire) && rclcpp::ok();
@@ -1010,6 +1036,7 @@ class M3TTrackerNode final : public rclcpp::Node {
   std::string depth_topic_;
   std::string color_info_topic_;
   std::string depth_info_topic_;
+  std::string tracker_ready_topic_;
   std::string gt_frame_;
   double track_rate_{0.0};
   double publish_rate_{60.0};
@@ -1049,6 +1076,8 @@ class M3TTrackerNode final : public rclcpp::Node {
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr
       depth_info_subscription_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr redetect_service_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
+      tracker_ready_publisher_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
