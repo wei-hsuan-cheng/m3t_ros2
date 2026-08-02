@@ -7,11 +7,12 @@
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false
+    # Raw Google 16k mesh -> centered NVDU YCB body frame.
     geometry2body_pose: [
-      1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0
+      0.86602501, -0.5,        0.0, 0.009908,
+      0.0,         0.0,       -1.0, 0.069902,
+      0.5,         0.86602501, 0.0, 0.016903,
+      0.0,         0.0,        0.0, 1.0
     ]
     body_id: 2
     region_id: 2

@@ -7,11 +7,13 @@
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false
+    # Raw Google 16k mesh -> centered NVDU YCB body frame. FAST-YCB
+    # dope/poses.txt is expressed in this body frame.
     geometry2body_pose: [
-      1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0
+      0.0, -1.0,  0.0, -0.014142,
+      0.0,  0.0, -1.0,  0.103475,
+      1.0,  0.0,  0.0,  0.012885,
+      0.0,  0.0,  0.0,  1.0
     ]
     body_id: 3
     region_id: 3

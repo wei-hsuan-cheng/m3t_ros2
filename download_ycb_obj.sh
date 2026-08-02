@@ -85,6 +85,37 @@ download_object() {
   local obj_sha
   local mtl_sha
   local texture_sha
+  local geometry2body_rows
+  local numeric_object_id="${ycb_object_id%%_*}"
+
+  numeric_object_id="$((10#${numeric_object_id}))"
+
+  case "${ycb_object_id}" in
+    002_master_chef_can)
+      geometry2body_rows='      0.86602501, -0.5,        0.0, 0.009908,
+      0.0,         0.0,       -1.0, 0.069902,
+      0.5,         0.86602501, 0.0, 0.016903,
+      0.0,         0.0,        0.0, 1.0'
+      ;;
+    003_cracker_box)
+      geometry2body_rows='      0.0, -1.0,  0.0, -0.014142,
+      0.0,  0.0, -1.0,  0.103475,
+      1.0,  0.0,  0.0,  0.012885,
+      0.0,  0.0,  0.0,  1.0'
+      ;;
+    006_mustard_bottle)
+      geometry2body_rows='      0.92050499, -0.39073101, 0.0, 0.004926,
+      0.0,         0.0,       -1.0, 0.092498,
+      0.39073101,  0.92050499, 0.0, 0.027136,
+      0.0,         0.0,        0.0, 1.0'
+      ;;
+    *)
+      geometry2body_rows='      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0'
+      ;;
+  esac
 
   mkdir -p "${temp_dir}"
 
@@ -137,14 +168,13 @@ EOF
     geometry_unit_in_meter: 1.0
     geometry_counterclockwise: true
     geometry_enable_culling: false
+    # Raw Google 16k mesh -> centered NVDU YCB body frame for supported
+    # FAST-YCB/DOPE objects; identity for other downloaded objects.
     geometry2body_pose: [
-      1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0
+${geometry2body_rows}
     ]
-    body_id: 3
-    region_id: 3
+    body_id: ${numeric_object_id}
+    region_id: ${numeric_object_id}
     # [x, y, z, roll, pitch, yaw], with angles in radians.
     initial_pose: [0.0, 0.0, 0.5, 0.0, 0.0, 0.0]
     gt_initial_pose: [0.0, 0.0, 0.5, 0.0, 0.0, 0.0]
