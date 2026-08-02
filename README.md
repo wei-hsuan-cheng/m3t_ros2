@@ -12,12 +12,16 @@ camera/image publisher                       m3t_tracker_node
   depth CameraInfo ------------------------> depth intrinsics
 ```
 
-- Built-in objects: `triangle`, `box`, `cylinder`, `002_master_chef_can`, `003_cracker_box`, and `006_mustard_bottle`.
+- Built-in objects: 
+  - YCB dataset: `002_master_chef_can`, `003_cracker_box`, and `006_mustard_bottle`, etc.
+  - Geometric primitives: `triangle`, `box`, `cylinder`
+
 - Supported modalities: combination of `region`, `depth`, and `texture`.
 
 The tracker never reads camera intrinsics from an object or tracker config. It waits until the external camera has published both `Image` and `CameraInfo` before it initializes M3T.
 
 The optional synthetic and sequence nodes in this package are camera publishers for development only, so their own intrinsics are configured in their ROS parameter sections.
+
 
 ## Build
 
@@ -37,50 +41,43 @@ colcon build --symlink-install \
   . install/setup.bash
 ```
 
-## Package layout
 
-```text
-m3t_ros2/
-  assets/primitives/<object>/        primitive mesh assets
-  assets/ycb/<ycb_object_id>/        YCB mesh, material, and texture assets
-  config/m3t.yaml                    common parameters and launch substitutions
-  config/objects/primitives/<object>.yaml  primitive object parameters
-  config/objects/ycb/<ycb_object_id>.yaml  YCB object parameters
-  launch/m3t.launch.py               one launch interface
-```
-
-The launch file loads the selected object YAML, optional sequence YAML, and then `m3t.yaml` as substitution-enabled ROS parameter files. Launch arguments map directly into `m3t.yaml` with entries such as `publish_rate: $(var publish_rate)`; the launch file does not construct node parameter dictionaries.
-
-## Run with the online synthetic source
+## Example 1: Run with online synthetic source
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic object:=006_mustard_bottle rviz:=true
-# object:=box | triangle | cylinder | 002_master_chef_can |
-#         003_cracker_box | 006_mustard_bottle
+  object:=006_mustard_bottle \
+  modalities:=region,depth,texture \
+  source:=synthetic \
+  rviz:=true
+
+# object:=002_master_chef_can | 003_cracker_box | 006_mustard_bottle | etc.
 ```
 
-Per-frame refinement is configured under `m3t_tracker_node.ros__parameters` in `config/m3t.yaml`. The tracker runs at least `min_corr_iterations` and at most `max_corr_iterations`, with `n_update_iterations` pose updates per correspondence round. It stops early after both pose-change thresholds remain satisfied for `convergence_required_rounds` consecutive rounds. Set `adaptive_iterations: false` to always run `max_corr_iterations`.
+**Per-frame refinement** params can be configured in [`config/m3t.yaml`](./config/m3t.yaml).
 
-Overlay and keypoint image topics are enabled by default for RViz. Use `image_outputs:=none` when those debug images are not needed.
+The tracker runs at least `min_corr_iterations` and at most `max_corr_iterations`, with `n_update_iterations` pose updates per correspondence round.
+
+It stops early after both pose-change thresholds remain satisfied for `convergence_required_rounds` consecutive rounds. Set `adaptive_iterations: false` to always run `max_corr_iterations`.
 
 ```yaml
 adaptive_iterations: true
 min_corr_iterations: 2
 max_corr_iterations: 10
 n_update_iterations: 5
-convergence_translation_threshold: 0.0001  # meter
-convergence_rotation_threshold_deg: 0.05
+convergence_translation_threshold: 0.0001  # [m]
+convergence_rotation_threshold_deg: 0.05   # [deg]
 convergence_required_rounds: 5
 ```
 
-## Run only the tracker with an external camera
+
+## Example 2: Run with an external camera
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=topics \
   object:=box \
   modalities:=region,depth,texture \
+  source:=topics \
   init_mode:=tf \
   color_topic:=/camera/color/image_raw \
   color_info_topic:=/camera/color/camera_info \
@@ -98,13 +95,15 @@ Initialization modes:
 
 The camera driver must publish valid dimensions and the pinhole matrix `K` in `sensor_msgs/msg/CameraInfo`. With the depth modality enabled, RGB and depth timestamps must fall within `sync_tolerance` (default 0.02 seconds).
 
-## Run a recorded sequence
+
+## Example 3: Run with a recorded sequence (*e.g.*, benchmark dataset)
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
+  object:=box \
+  modalities:=region,depth,texture \
   source:=sequence \
   sequence_config:=/data/box_sequence/sequence.yaml \
-  object:=box modalities:=region,depth,texture
 ```
 
 The sequence node is read-only. File patterns, frame count, camera intrinsics, and optional `gt_poses` are stored in the sequence YAML. Source rate, looping, frame names, and topics use the same launch arguments as the synthetic source. It never creates files in the dataset or package tree. A sequence can set `wait_for_tracker_ready: true` to hold its first frame while M3T loads or generates model caches and performs one-time detection; playback begins when the tracker publishes readiness.
@@ -135,11 +134,11 @@ Launch the real cracker sequence interactively:
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
+  object:=003_cracker_box \
+  modalities:=region,depth,texture \
   source:=sequence \
   sequence_config:="$(ros2 pkg prefix m3t_ros2)/share/m3t_ros2/config/sequences/fast_ycb/003_cracker_box_real.yaml" \
   sequence_dir:=/root/mac_src/object_pose_tracking/dataset/fast-ycb/003_cracker_box_real \
-  object:=003_cracker_box \
-  modalities:=region,depth,texture \
   init_mode:=static \
   image_outputs:=overlay,keypoints \
   rviz:=true
@@ -168,6 +167,7 @@ ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
 
 Omit `--sequence` to test `006_mustard_bottle_real`, which remains the default. `M3T_FAST_YCB_DIR` can override one exact sequence directory instead of setting the common root. `--rviz` keeps the launch running after the smoke check; press Ctrl-C to stop it. The headless default remains `image_outputs:=none`. The accepted image selections are `none`, `overlay`, `keypoints`, and `overlay,keypoints`. Use `--keep-running` without `--rviz` when viewing published images in another ROS tool.
 
+
 ## Custom object
 
 Adding an object requires:
@@ -193,6 +193,7 @@ chmod +x download_ycb_obj.sh
 ```
 
 The script preserves the official ID-prefixed YCB name, downloads each object into `assets/ycb/<ycb_object_id>/`, and creates `config/objects/ycb/<ycb_object_id>.yaml`. Generated configs for master chef, cracker, and mustard include their NVIDIA Dataset Utilities transform from the raw Google 16k mesh to the centered NVDU body frame.
+
 
 ### 1. Prepare the mesh
 
@@ -220,6 +221,7 @@ m3t_ros2/assets/custom/my_object/
 ```
 
 `texture_path` is optional and is used by the synthetic RGB renderer. The runtime texture tracking modality itself builds image keyframes and does not require a pre-textured CAD model when tracking a real camera.
+
 
 ### 2. Create the object YAML
 
@@ -288,16 +290,17 @@ rotation_symmetries: [
 ]
 ```
 
+
 ### 3. Test it without changing launch code
 
 An external object YAML supplies the object parameters, so no C++ or launch-file modification is required. Set `object` to the object name as well so the default model-cache directory is named correctly:
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic \
   object:=my_object \
   object_config:=/absolute/path/to/my_object.yaml \
   modalities:=region,depth,texture \
+  source:=synthetic \
   init_mode:=gt \
   rviz:=true
 ```
@@ -306,10 +309,10 @@ For a real camera:
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=topics \
   object:=my_object \
   object_config:=/absolute/path/to/my_object.yaml \
   modalities:=region,depth,texture \
+  source:=topics \
   init_mode:=static \
   color_topic:=/camera/color/image_raw \
   color_info_topic:=/camera/color/camera_info \
@@ -319,6 +322,7 @@ ros2 launch m3t_ros2 m3t.launch.py \
 ```
 
 Use `init_mode:=tf` instead of `static` when another node provides `world_frame -> gt_frame`.
+
 
 ### 4. Optionally register it as a built-in object
 
@@ -340,12 +344,13 @@ Then launch:
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic \
   object:=my_object \
   modalities:=region,depth,texture \
+  source:=synthetic \
   init_mode:=gt \
   rviz:=true
 ```
+
 
 ### 5. Generated tracking models
 
@@ -363,13 +368,14 @@ If the mesh scale, geometry, body-frame transform, or winding settings change, u
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
-  source:=synthetic \
   object:=my_object \
+  source:=synthetic \
   model_cache_dir:=auto_generated/m3t/my_object_v2 \
   rviz:=true
 ```
 
 The cache directory must be writable.
+
 
 ### 6. Verify the loaded parameters
 
@@ -384,6 +390,7 @@ ros2 param get /m3t_synthetic_source gt_initial_pose
 ```
 
 If an edited YAML appears to have no effect, confirm that the launch uses the intended `object_config`. For a built-in object, rebuild and source `install/setup.bash` so the installed package contains the new YAML and assets.
+
 
 ## Contact
 
