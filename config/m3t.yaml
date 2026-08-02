@@ -30,12 +30,12 @@ m3t_tracker_node:
     log_period: 2.0
     event_driven: true
     adaptive_iterations: true
-    min_corr_iterations: 2
+    min_corr_iterations: 5
     max_corr_iterations: 10
-    n_update_iterations: 5
+    n_update_iterations: 10
     convergence_translation_threshold: 0.0001
-    convergence_rotation_threshold_deg: 0.05
-    convergence_required_rounds: 5
+    convergence_rotation_threshold_deg: 0.01
+    convergence_required_rounds: 10
     publisher_thread_nice: 5 # Tracker remains at normal nice=0; publisher is deliberately lower.
     image_outputs: $(var image_outputs)
     sync_tolerance: 0.02
