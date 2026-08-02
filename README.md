@@ -107,7 +107,42 @@ ros2 launch m3t_ros2 m3t.launch.py \
   object:=box modalities:=region,depth,texture
 ```
 
-The sequence node is read-only. File patterns, frame count, camera intrinsics, and optional `gt_poses` are stored in the sequence YAML. Source rate, looping, frame names, and topics use the same launch arguments as the synthetic source. It never creates files in the dataset or package tree.
+The sequence node is read-only. File patterns, frame count, camera intrinsics, and optional `gt_poses` are stored in the sequence YAML. Source rate, looping, frame names, and topics use the same launch arguments as the synthetic source. It never creates files in the dataset or package tree. A sequence can set `wait_for_tracker_ready: true` to hold its first frame while M3T loads or generates model caches and performs one-time detection; playback begins when the tracker publishes readiness.
+
+FAST-YCB `.float` depth files are converted to the configured `depth_scale` in memory. The real-mustard configuration plays all 775 RGB-D frames once at the recorded 30 Hz rate and uses the frame-0 DOPE pose for one-time initialization:
+
+```bash
+ros2 launch m3t_ros2 m3t.launch.py \
+  source:=sequence \
+  sequence_config:="$(ros2 pkg prefix m3t_ros2)/share/m3t_ros2/config/sequences/fast_ycb/006_mustard_bottle_real.yaml" \
+  sequence_dir:=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
+  object:=006_mustard_bottle \
+  modalities:=region,depth,texture \
+  init_mode:=static \
+  image_outputs:=overlay,keypoints \
+  rviz:=true
+```
+
+For this sequence, `init_mode:=static` selects M3T's `StaticDetector`. Its `initial_pose` is the frame-0 entry from FAST-YCB `dope/poses.txt`, converted from axis-angle to quaternion in the sequence YAML. It is applied once and is not fed back during tracking. The mustard object's `geometry2body_pose` maps the raw Google 16k mesh into the centered NVDU frame used by `dope/poses.txt`.
+
+The dataset directory must contain every `rgb/<index>.png` and `depth/<index>.float` from index 0 through 774. FAST-YCB real sequences provide DOPE estimates but no ground truth, so tracker logs report `no-GT` and cannot measure accuracy.
+
+Run the same pipeline without RViz as an automated smoke test:
+
+```bash
+M3T_FAST_YCB_DIR=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
+ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real
+```
+
+For an interactive RViz run with both tracker image outputs, use:
+
+```bash
+M3T_FAST_YCB_DIR=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
+ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
+  --rviz --image-outputs overlay,keypoints
+```
+
+`--rviz` keeps the launch running after the smoke check; press Ctrl-C to stop it. The headless default remains `image_outputs:=none`. The accepted image selections are `none`, `overlay`, `keypoints`, and `overlay,keypoints`. Use `--keep-running` without `--rviz` when viewing published images in another ROS tool.
 
 ## Custom object
 
