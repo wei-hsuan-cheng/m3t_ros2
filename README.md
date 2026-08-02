@@ -82,19 +82,50 @@ Below shows how to test `m3t` with [FAST-YCB](https://github.com/wei-hsuan-cheng
 
 FAST-YCB `.float` depth files are converted to the configured `depth_scale` in memory. The included real-sequence configurations play every RGB-D frame once at a configurable rate (originally recorded at 30 [Hz]), and use the frame-0 DOPE pose for one-time initialization.
 
-| Sequence | M3T object | Frames | Ground truth |
-| --- | --- | ---: | --- |
-| `003_cracker_box_real` | `003_cracker_box` | 1682 | No |
-| `006_mustard_bottle_real` | `006_mustard_bottle` | 775 | No |
-
-Download the desired sequence, *e.g.*, `003_cracker_box_real`:
+Download the desired sequence, *e.g.*, `003_cracker_box_real`, through:
 
 ```bash
+cd <dataset_path>
+git clone https://github.com/wei-hsuan-cheng/fast-ycb.git
+
 cd <dataset_path>/fast-ycb
 bash tools/download/download_dataset.sh 003_cracker_box_real
 ```
 
-Note that downloading or replacing dataset frames does not require rebuilding `m3t_ros2`.
+
+### Required dataset files for FAST-YCB sequence
+
+After extraction, a supported real sequence must have this layout:
+
+```text
+<dataset_path>/fast-ycb/003_cracker_box_real/
+├── cam_K.json
+├── rgb/
+│   ├── 0.png
+│   ├── ...
+│   └── 1681.png
+├── depth/
+│   ├── 0.float
+│   ├── ...
+│   └── 1681.float
+└── dope/
+    └── poses.txt
+```
+
+The downloader provides these files in their original FAST-YCB format. No offline conversion, depth rescaling, generated PNG depth images, or temporary preprocessing directory is required.
+
+During playback, `m3t_image_publisher_node` reads each `.float` depth frame in [m] and converts it in memory to a ROS `16UC1` image using `depth_scale: 0.001` from [`config/m3t.yaml`](./config/m3t.yaml).
+
+### Required config files for FAST-YCB sequence
+
+The sequence config YAML files (object-specific) have to be provided. 
+
+For example, this repo already contains [`fast_ycb/003_cracker_box_real.yaml`](./config/sequences/fast_ycb/003_cracker_box_real.yaml) and [`fast_ycb/006_mustard_bottle_real.yaml`](./config/sequences/fast_ycb/006_mustard_bottle_real.yaml).
+
+These config files should contain:
+- [`sequence_dir`](./config/sequences/fast_ycb/003_cracker_box_real.yaml) that points to the extracted dataset directory
+- [`camera intrinsics`](./config/sequences/fast_ycb/003_cracker_box_real.yaml) matching `cam_K.json`
+- [`initial_pose`](./config/sequences/fast_ycb/003_cracker_box_real.yaml) matching the frame-0 pose converted from `dope/poses.txt`. (The initial pose is applied once and is not fed back during tracking)
 
 Launch the example with sequence:
 
@@ -109,8 +140,6 @@ ros2 launch m3t_ros2 m3t.launch.py \
   image_outputs:=overlay,keypoints \
   rviz:=true
 ```
-
-For these sequences, `init_mode:=static` selects M3T's `StaticDetector`. Its `initial_pose` is the frame-0 entry from FAST-YCB `dope/poses.txt`, converted from axis-angle to quaternion in the sequence YAML. It is applied once and is not fed back during tracking. 
 
 The YCB object configs contain the `geometry2body_pose` that maps each raw Google 16k mesh into the centered NVDU frame used by `dope/poses.txt`. These matrices come from [NVIDIA Dataset Utilities](https://github.com/NVIDIA/Dataset_Utilities); they are transposed into M3T's row-major parameter layout and their translations are converted from centimetres to metres.
 
