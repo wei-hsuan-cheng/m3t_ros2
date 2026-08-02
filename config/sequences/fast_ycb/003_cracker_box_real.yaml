@@ -1,0 +1,30 @@
+# Complete FAST-YCB real cracker sequence. The source directory must contain
+# all 1682 RGB-D frames with indices 0 through 1681.
+m3t_image_publisher:
+  ros__parameters:
+    sequence_dir: $(var sequence_dir)
+    color_pattern: "rgb/%d.png"
+    depth_pattern: "depth/%d.float"
+    depth_format: fast_ycb_float
+    start_index: 0
+    n_frames: 1682
+    loop: false
+    publish_rate: 30.0
+    wait_for_tracker_ready: true
+    camera_intrinsics: [
+      921.675476074219, 920.946899414062,
+      659.003295898438, 369.155395507812,
+      1280.0, 720.0
+    ]
+
+m3t_tracker_node:
+  ros__parameters:
+    # Frame-0 dope/poses.txt axis-angle pose converted to
+    # [x, y, z, qx, qy, qz, qw]. The corrected geometry2body_pose in the
+    # cracker object config maps the raw mesh into this NVDU body frame.
+    # StaticDetector applies this pose once; later DOPE poses are not fed back.
+    initial_pose: [
+      -0.090996, 0.038171, 0.594551,
+      -0.027027495393957, 0.972704135495199,
+      0.225852803855530, 0.045898695775173
+    ]

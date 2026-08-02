@@ -7,6 +7,7 @@ set -euo pipefail
 #   ros2 run m3t_ros2 m3t_smoke_test external-camera
 #   ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real
 #   ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
+#     --sequence 003_cracker_box_real \
 #     --rviz --image-outputs overlay,keypoints
 #
 # The second mode launches the tracker with source:=topics, proves that it does
@@ -23,12 +24,13 @@ init_mode="${M3T_SMOKE_INIT_MODE:-gt}"
 rviz="${M3T_SMOKE_RVIZ:-false}"
 image_outputs="${M3T_SMOKE_IMAGE_OUTPUTS:-none}"
 keep_running="${M3T_SMOKE_KEEP_RUNNING:-false}"
-timeout_seconds="${M3T_SMOKE_TIMEOUT:-75}"
+fast_ycb_sequence="${M3T_FAST_YCB_SEQUENCE:-006_mustard_bottle_real}"
+timeout_seconds="${M3T_SMOKE_TIMEOUT:-120}"
 log_root="${M3T_SMOKE_LOG_DIR:-${ROS_HOME:-${HOME}/.ros}/m3t/smoke_logs}"
 cache_dir="${M3T_MODEL_CACHE_DIR:-${PWD}/auto_generated/m3t/${object}}"
 
 usage() {
-  echo "usage: ros2 run m3t_ros2 m3t_smoke_test {synthetic|external-camera|fast-ycb-real} [--rviz] [--image-outputs {none|overlay|keypoints|overlay,keypoints}] [--keep-running]" >&2
+  echo "usage: ros2 run m3t_ros2 m3t_smoke_test {synthetic|external-camera|fast-ycb-real} [--sequence <fast-ycb-sequence>] [--rviz] [--image-outputs {none|overlay|keypoints|overlay,keypoints}] [--keep-running]" >&2
 }
 
 while (( $# > 0 )); do
@@ -52,6 +54,18 @@ while (( $# > 0 )); do
       ;;
     --keep-running)
       keep_running=true
+      shift
+      ;;
+    --sequence)
+      if (( $# < 2 )); then
+        usage
+        exit 2
+      fi
+      fast_ycb_sequence="$2"
+      shift 2
+      ;;
+    --sequence=*)
+      fast_ycb_sequence="${1#*=}"
       shift
       ;;
     *)
@@ -246,11 +260,41 @@ case "${mode}" in
     ;;
 
   fast-ycb-real)
-    tracker_log="${log_root}/fast_ycb_006_mustard_bottle_real.log"
+    if [[ ! "${fast_ycb_sequence}" =~ ^[0-9]{3}_[a-z0-9_]+_real$ ]]; then
+      echo "invalid FAST-YCB real sequence: ${fast_ycb_sequence}" >&2
+      usage
+      exit 2
+    fi
+    fast_ycb_object="${fast_ycb_sequence%_real}"
+    fast_ycb_root="${M3T_FAST_YCB_ROOT:-/root/mac_src/object_pose_tracking/dataset/fast-ycb}"
+    tracker_log="${log_root}/fast_ycb_${fast_ycb_sequence}.log"
     : >"${tracker_log}"
-    dataset_dir="${M3T_FAST_YCB_DIR:-/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real}"
+    dataset_dir="${M3T_FAST_YCB_DIR:-${fast_ycb_root}/${fast_ycb_sequence}}"
+    if [[ ! -d "${dataset_dir}/rgb" || ! -d "${dataset_dir}/depth" ]]; then
+      fail_with_log "FAST-YCB RGB-D directory is missing: ${dataset_dir}" \
+        "${tracker_log}"
+    fi
+    color_count="$(find "${dataset_dir}/rgb" -maxdepth 1 -type f -name '*.png' 2>/dev/null | wc -l | awk '{print $1}')"
+    depth_count="$(find "${dataset_dir}/depth" -maxdepth 1 -type f -name '*.float' 2>/dev/null | wc -l | awk '{print $1}')"
+    if (( color_count == 0 || color_count != depth_count )); then
+      fail_with_log \
+        "FAST-YCB ${fast_ycb_sequence} has mismatched RGB/depth counts (${color_count}/${depth_count})" \
+        "${tracker_log}"
+    fi
+    n_frames="${color_count}"
+    if [[ ! -f "${dataset_dir}/cam_K.json" ||
+          ! -f "${dataset_dir}/dope/poses.txt" ]]; then
+      fail_with_log "FAST-YCB camera or DOPE metadata is missing: ${dataset_dir}" \
+        "${tracker_log}"
+    fi
+    pose_count="$(wc -l < "${dataset_dir}/dope/poses.txt" | awk '{print $1}')"
+    if (( pose_count != n_frames )); then
+      fail_with_log \
+        "FAST-YCB ${fast_ycb_sequence} has ${pose_count} poses for ${n_frames} frames" \
+        "${tracker_log}"
+    fi
     missing_frame=""
-    for frame_index in $(seq 0 774); do
+    for frame_index in $(seq 0 "$((n_frames - 1))"); do
       if [[ ! -f "${dataset_dir}/rgb/${frame_index}.png" ||
             ! -f "${dataset_dir}/depth/${frame_index}.float" ]]; then
         missing_frame="${frame_index}"
@@ -259,18 +303,28 @@ case "${mode}" in
     done
     if [[ -n "${missing_frame}" ]]; then
       fail_with_log \
-        "FAST-YCB real mustard is incomplete: missing RGB-D frame ${missing_frame} in ${dataset_dir}" \
+        "FAST-YCB ${fast_ycb_sequence} is incomplete: missing RGB-D frame ${missing_frame} in ${dataset_dir}" \
         "${tracker_log}"
     fi
 
     package_prefix="$(ros2 pkg prefix m3t_ros2)"
-    sequence_config="${package_prefix}/share/m3t_ros2/config/sequences/fast_ycb/006_mustard_bottle_real.yaml"
-    echo "Launching complete FAST-YCB real-mustard smoke test..."
+    sequence_config="${package_prefix}/share/m3t_ros2/config/sequences/fast_ycb/${fast_ycb_sequence}.yaml"
+    if [[ ! -f "${sequence_config}" ]]; then
+      fail_with_log "missing installed sequence config: ${sequence_config}" \
+        "${tracker_log}"
+    fi
+    configured_frames="$(sed -n 's/^[[:space:]]*n_frames:[[:space:]]*\([0-9][0-9]*\).*$/\1/p' "${sequence_config}" | head -n 1)"
+    if [[ "${configured_frames}" != "${n_frames}" ]]; then
+      fail_with_log \
+        "sequence config expects ${configured_frames:-unknown} frames, dataset has ${n_frames}" \
+        "${tracker_log}"
+    fi
+    echo "Launching complete FAST-YCB ${fast_ycb_sequence} smoke test..."
     setsid ros2 launch m3t_ros2 m3t.launch.py \
       source:=sequence \
       sequence_config:="${sequence_config}" \
       sequence_dir:="${dataset_dir}" \
-      object:=006_mustard_bottle \
+      object:="${fast_ycb_object}" \
       modalities:=region,depth,texture \
       init_mode:=static \
       image_outputs:="${image_outputs}" \
@@ -284,15 +338,15 @@ case "${mode}" in
       "${tracker_log}" "tracker did not receive FAST-YCB RGB-D frames"
     wait_for_pattern "${tracker_pid}" "no-GT" "${tracker_log}" \
       "tracker did not complete a no-GT tracking window"
-    wait_for_pattern "${tracker_pid}" "sequence complete" "${tracker_log}" \
-      "FAST-YCB source did not publish all 775 frames"
+    wait_for_pattern "${tracker_pid}" "sequence complete after ${n_frames} frames" "${tracker_log}" \
+      "FAST-YCB source did not publish all ${n_frames} frames"
     sleep 2
     if grep -qE '^\[ERROR\].*process has died' "${tracker_log}" ||
        ! kill -0 "${tracker_pid}" 2>/dev/null; then
       fail_with_log "FAST-YCB pipeline was not stable after tracking started" \
         "${tracker_log}"
     fi
-    echo "PASS: FAST-YCB real mustard completed all 775 RGB-D frames"
+    echo "PASS: FAST-YCB ${fast_ycb_sequence} completed all ${n_frames} RGB-D frames"
     echo "Log: ${tracker_log}"
     wait_for_interactive_exit
     ;;

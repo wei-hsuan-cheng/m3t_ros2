@@ -109,40 +109,64 @@ ros2 launch m3t_ros2 m3t.launch.py \
 
 The sequence node is read-only. File patterns, frame count, camera intrinsics, and optional `gt_poses` are stored in the sequence YAML. Source rate, looping, frame names, and topics use the same launch arguments as the synthetic source. It never creates files in the dataset or package tree. A sequence can set `wait_for_tracker_ready: true` to hold its first frame while M3T loads or generates model caches and performs one-time detection; playback begins when the tracker publishes readiness.
 
-FAST-YCB `.float` depth files are converted to the configured `depth_scale` in memory. The real-mustard configuration plays all 775 RGB-D frames once at the recorded 30 Hz rate and uses the frame-0 DOPE pose for one-time initialization:
+FAST-YCB `.float` depth files are converted to the configured `depth_scale` in memory. The included real-sequence configurations play every RGB-D frame once at the recorded 30 Hz rate and use the frame-0 DOPE pose for one-time initialization.
+
+| Sequence | M3T object | Frames | Ground truth |
+| --- | --- | ---: | --- |
+| `003_cracker_box_real` | `003_cracker_box` | 1682 | No |
+| `006_mustard_bottle_real` | `006_mustard_bottle` | 775 | No |
+
+Download the desired sequence on the host. For example, on macOS:
+
+```bash
+cd /Users/<user>/src/object_pose_tracking/dataset/fast-ycb
+bash tools/download/download_dataset.sh 003_cracker_box_real
+```
+
+Mount the host source directory into the ROS 2 container and verify that the sequence is visible. With the `/root/mac_src` mount used in these examples:
+
+```bash
+ls /root/mac_src/object_pose_tracking/dataset/fast-ycb/003_cracker_box_real
+```
+
+Build `m3t_ros2` once after adding or updating package code and configuration. Downloading or replacing dataset frames does not require rebuilding.
+
+Launch the real cracker sequence interactively:
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
   source:=sequence \
-  sequence_config:="$(ros2 pkg prefix m3t_ros2)/share/m3t_ros2/config/sequences/fast_ycb/006_mustard_bottle_real.yaml" \
-  sequence_dir:=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
-  object:=006_mustard_bottle \
+  sequence_config:="$(ros2 pkg prefix m3t_ros2)/share/m3t_ros2/config/sequences/fast_ycb/003_cracker_box_real.yaml" \
+  sequence_dir:=/root/mac_src/object_pose_tracking/dataset/fast-ycb/003_cracker_box_real \
+  object:=003_cracker_box \
   modalities:=region,depth,texture \
   init_mode:=static \
   image_outputs:=overlay,keypoints \
   rviz:=true
 ```
 
-For this sequence, `init_mode:=static` selects M3T's `StaticDetector`. Its `initial_pose` is the frame-0 entry from FAST-YCB `dope/poses.txt`, converted from axis-angle to quaternion in the sequence YAML. It is applied once and is not fed back during tracking. The mustard object's `geometry2body_pose` maps the raw Google 16k mesh into the centered NVDU frame used by `dope/poses.txt`.
+For these sequences, `init_mode:=static` selects M3T's `StaticDetector`. Its `initial_pose` is the frame-0 entry from FAST-YCB `dope/poses.txt`, converted from axis-angle to quaternion in the sequence YAML. It is applied once and is not fed back during tracking. The YCB object configs contain the `geometry2body_pose` that maps each raw Google 16k mesh into the centered NVDU frame used by `dope/poses.txt`. These matrices come from [NVIDIA Dataset Utilities](https://github.com/NVIDIA/Dataset_Utilities); they are transposed into M3T's row-major parameter layout and their translations are converted from centimetres to metres.
 
-The dataset directory must contain every `rgb/<index>.png` and `depth/<index>.float` from index 0 through 774. FAST-YCB real sequences provide DOPE estimates but no ground truth, so tracker logs report `no-GT` and cannot measure accuracy.
+FAST-YCB real sequences provide DOPE estimates but no ground truth, so tracker logs report `no-GT` and cannot measure accuracy.
 
-Run the same pipeline without RViz as an automated smoke test:
+Run either complete sequence without RViz as an automated smoke test:
 
 ```bash
-M3T_FAST_YCB_DIR=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
-ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real
+M3T_FAST_YCB_ROOT=/root/mac_src/object_pose_tracking/dataset/fast-ycb \
+ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
+  --sequence 003_cracker_box_real
 ```
 
-For an interactive RViz run with both tracker image outputs, use:
+For an interactive RViz run with both tracker image outputs, add:
 
 ```bash
-M3T_FAST_YCB_DIR=/root/mac_src/object_pose_tracking/dataset/fast-ycb/006_mustard_bottle_real \
+M3T_FAST_YCB_ROOT=/root/mac_src/object_pose_tracking/dataset/fast-ycb \
 ros2 run m3t_ros2 m3t_smoke_test fast-ycb-real \
+  --sequence 003_cracker_box_real \
   --rviz --image-outputs overlay,keypoints
 ```
 
-`--rviz` keeps the launch running after the smoke check; press Ctrl-C to stop it. The headless default remains `image_outputs:=none`. The accepted image selections are `none`, `overlay`, `keypoints`, and `overlay,keypoints`. Use `--keep-running` without `--rviz` when viewing published images in another ROS tool.
+Omit `--sequence` to test `006_mustard_bottle_real`, which remains the default. `M3T_FAST_YCB_DIR` can override one exact sequence directory instead of setting the common root. `--rviz` keeps the launch running after the smoke check; press Ctrl-C to stop it. The headless default remains `image_outputs:=none`. The accepted image selections are `none`, `overlay`, `keypoints`, and `overlay,keypoints`. Use `--keep-running` without `--rviz` when viewing published images in another ROS tool.
 
 ## Custom object
 
@@ -168,7 +192,7 @@ chmod +x download_ycb_obj.sh
   006_mustard_bottle
 ```
 
-The script preserves the official ID-prefixed YCB name, downloads each object into `assets/ycb/<ycb_object_id>/`, and creates `config/objects/ycb/<ycb_object_id>.yaml`.
+The script preserves the official ID-prefixed YCB name, downloads each object into `assets/ycb/<ycb_object_id>/`, and creates `config/objects/ycb/<ycb_object_id>.yaml`. Generated configs for master chef, cracker, and mustard include their NVIDIA Dataset Utilities transform from the raw Google 16k mesh to the centered NVDU body frame.
 
 ### 1. Prepare the mesh
 
