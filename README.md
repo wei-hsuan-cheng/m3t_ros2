@@ -320,7 +320,6 @@ ros2 launch m3t_ros2 m3t.launch.py \
   object:=my_object \
   modalities:=region,depth,texture \
   source:=synthetic \
-  init_mode:=gt \
   rviz:=true
 ```
 
