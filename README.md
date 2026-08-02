@@ -23,7 +23,7 @@ camera/image publisher                       m3t_tracker_node
   2. Recorded sequence (*e.g.*, benchmark dataset)
   3. Camera (real-world application)
 
-The tracker never reads camera intrinsics from an object or tracker config. It waits until the external camera has published both `Image` and `CameraInfo` before it initializes M3T.
+The tracker never reads camera intrinsics from an object or tracker config. It waits until the camera has published both `Image` and `CameraInfo` before it initializes M3T.
 
 The optional synthetic and sequence nodes in this package are camera publishers for development only, so their own intrinsics are configured in their ROS parameter sections.
 
@@ -149,7 +149,7 @@ The YCB object configs contain the `geometry2body_pose` that maps each raw Googl
 FAST-YCB real sequences provide DOPE estimates but no ground truth, so tracker logs report `no-GT` and cannot measure accuracy.
 
 
-## Example 3: Run with an external camera
+## Example 3: Run with an real camera
 
 ```bash
 ros2 launch m3t_ros2 m3t.launch.py \
