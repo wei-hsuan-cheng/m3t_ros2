@@ -33,6 +33,9 @@ The optional synthetic and sequence nodes in this package are camera publishers 
 From the ROS 2 workspace:
 
 ```bash
+cd <workspace_dir>/src
+git clone https://github.com/wei-hsuan-cheng/m3t_ros2.git
+
 cd <workspace_dir>
 NUM_JOBS=2 && \
 export CMAKE_BUILD_PARALLEL_LEVEL=${NUM_JOBS} && \
